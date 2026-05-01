@@ -1,0 +1,51 @@
+[package]
+name = "jj-bond"
+version = "0.1.0"
+edition = "2024"
+description = "jujutsu TUI"
+documentation = "https://github.com/TD-Sky/jj-bond"
+repository = "https://github.com/TD-Sky/jj-bond"
+readme = "README.md"
+categories = ["command-line-interface"]
+keywords = ["jujutsu", "jj", "tui", "terminal"]
+license = "MIT"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "Cargo.lock",
+  "LICENSE*",
+  "README.md",
+  "templates/**/*",
+]
+
+[dependencies]
+thiserror = "2"
+ratatui = "0.30"
+ratzgo = "0.1.0"
+compio = { version = "0.19", features = ["runtime", "process", "time"] }
+futures-util = "0.3"
+enumflags2 = "0.7.12"
+ansi-to-tui = "8.0"
+smol_str = "0.3"
+thin-cell = "0.2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+tracing-appender = "0.2.5"
+dirs = "6"
+notify = "8.2"
+regex = "1.13"
+ratatui-textarea = "0.9"
+tui-tree-widget = "0.24"
+bytestring = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1.4+spec-1.1.0"
+
+[lints.clippy]
+module_inception = "allow"
+
+[[bin]]
+name = "jb"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
