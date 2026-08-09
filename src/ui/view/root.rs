@@ -9,6 +9,7 @@ use ratzgo::{
 };
 
 use crate::{
+    config::Config,
     ui::{
         LogMsg, Message, NavMsg, NotifyMsg, State,
         view::{
@@ -21,6 +22,17 @@ use crate::{
 };
 
 pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
+    let log_stream = ratzgo::log::init();
+
+    match Config::load_or_default() {
+        Ok(v) => {
+            state.config = v;
+        }
+        Err(e) => {
+            ratzgo::log::error("load-config", format!("{e:?}"));
+        }
+    }
+
     state.main.jj_handle = match JJHandle::current() {
         Ok(v) => v,
         Err(e) => {
@@ -52,8 +64,6 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
         .set(ctx.make_debounce(debounce_duration))
         .expect("tags history debounce must only be initialized once");
 
-    let log_stream = ratzgo::log::init();
-
     match NotifyGitChange::new(state.main.jj_handle.clone()) {
         Ok(notify) => {
             ctx.select_mut()
@@ -72,7 +82,9 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
         ratzgo::log::error("workspace update-stale", e.into_text());
     }
 
-    ctx.queue().push(LogMsg::Fetch);
+    if state.config.launch_fetch {
+        ctx.queue().push(LogMsg::Fetch);
+    }
     ctx.queue().push(Message::Refresh);
 }
 

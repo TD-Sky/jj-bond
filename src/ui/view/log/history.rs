@@ -82,10 +82,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::AbandonConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some(squash) = modal_squash {
@@ -99,10 +96,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::SquashConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some(rebase) = modal_rebase {
@@ -116,10 +110,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::RebaseConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some(dup) = modal_duplicate {
@@ -133,10 +124,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::DuplicateConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some(Split { id, mode }) = modal_split {
@@ -155,10 +143,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::SplitConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some(text) = modal_bookmark_list {
@@ -190,10 +175,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::UndoConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if modal_redo {
@@ -207,10 +189,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     LogMsg::RedoConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    LogMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some((bookmarks, state)) = modal_unsync {

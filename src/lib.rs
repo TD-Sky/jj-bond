@@ -1,3 +1,4 @@
+pub mod config;
 pub mod ui {
     mod app;
     mod state;

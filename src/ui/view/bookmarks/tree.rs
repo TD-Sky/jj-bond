@@ -49,10 +49,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     BookmarksMsg::DeleteConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    BookmarksMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), BookmarksMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some((remotes, state)) = modal_remotes {

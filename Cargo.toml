@@ -39,6 +39,7 @@ tui-tree-widget = "0.24"
 bytestring = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 toml = "1.1.4+spec-1.1.0"
+eros = "0.7"
 
 [lints.clippy]
 module_inception = "allow"
@@ -49,3 +50,4 @@ path = "src/main.rs"
 
 [profile.release]
 lto = true
+codegen-units = 1

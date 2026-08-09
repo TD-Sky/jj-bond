@@ -9,6 +9,7 @@ use smol_str::SmolStr;
 use thin_cell::unsync::ThinCell;
 
 use crate::{
+    config::Config,
     ui::{
         Message,
         view::{
@@ -27,6 +28,7 @@ use crate::{
 
 #[derive(Debug, Default)]
 pub struct State {
+    pub config: Config,
     pub main: MainState,
     pub notify: notification::State,
     pub help: help::State,
