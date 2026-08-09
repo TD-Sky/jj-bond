@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 
-- *(readme)* Ask deepwiki
+- *(readme)* Ask deepwiki (#1)
 - *(readme)* Show
 
 ### Features
