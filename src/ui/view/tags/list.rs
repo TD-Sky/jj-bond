@@ -41,10 +41,7 @@ pub fn view<'a>(
                     |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
                     TagsMsg::DeleteConfirm(false).into(),
                 )
-                .on_key(
-                    |k| k.code == KeyCode::Char('?'),
-                    TagsMsg::Help.into(),
-                ),
+                .on_key(|k| k.code == KeyCode::Char('?'), TagsMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     }

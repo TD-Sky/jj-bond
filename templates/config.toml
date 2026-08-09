@@ -1,0 +1,2 @@
+# try fetch from remotes at launch
+launch_fetch = true

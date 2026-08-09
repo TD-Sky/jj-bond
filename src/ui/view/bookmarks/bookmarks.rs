@@ -136,6 +136,7 @@ pub async fn update(
                 }
             };
             state.log_mode = LogMode::Bookmark(bookmark);
+            state.log_history_state.reset();
             state.log_reloc = LogRelocate::Index {
                 index: 0,
                 file: None,

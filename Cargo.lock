@@ -587,6 +587,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "eros"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e79deb5442d1c7c12fd74ceddad5c63c30f736e079fe8b32def54c8a34de7f58"
+dependencies = [
+ "eros-macros",
+]
+
+[[package]]
+name = "eros-macros"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bf122f9900df1627ba3570e1b2d078f7fc608ddfe2336c9eb49eaf31d51a77b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "errno"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -964,6 +984,7 @@ dependencies = [
  "compio",
  "dirs",
  "enumflags2",
+ "eros",
  "futures-util",
  "notify",
  "ratatui",

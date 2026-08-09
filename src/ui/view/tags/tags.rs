@@ -114,6 +114,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 state.nav_tab = Tab::Log;
 
                 state.log_mode = LogMode::Tag(tag.clone());
+                state.log_history_state.reset();
                 state.log_reloc = LogRelocate::Index {
                     index: 0,
                     file: None,
