@@ -7,6 +7,7 @@ use tracing_subscriber::{
 pub fn init_log() {
     let file = {
         let dir = dirs::state_dir()
+            .or_else(dirs::cache_dir) // Fallback on cache dir for macOS & Windows
             .expect("cannot find state directory")
             .join("jj-bond");
         std::fs::create_dir_all(&dir).expect("failed to create log directory");
