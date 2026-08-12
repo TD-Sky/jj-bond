@@ -18,7 +18,7 @@ use crate::{
             notification, operations, tags,
         },
     },
-    utils::jj::{JJHandle, NotifyGitChange},
+    utils::jj::NotifyGitChange,
 };
 
 pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
@@ -32,15 +32,6 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
             ratzgo::log::error("load-config", format!("{e:?}"));
         }
     }
-
-    state.main.jj_handle = match JJHandle::current() {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!(error = %e, "get current jj workspace failed");
-            ctx.exit(true);
-            return;
-        }
-    };
 
     let debounce_duration = Duration::from_millis(50);
     state
