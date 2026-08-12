@@ -182,7 +182,7 @@ pub async fn update(
         }
         BookmarksMsg::Untrack => {
             if let [name, remote] = state.bookmarks_state.selected()
-                && let Some(remote) = remote.strip_prefix('@')
+                && let Some(remote) = remote.trim_end_matches('*').strip_prefix('@')
                 && remote != "git"
             {
                 match state.jj_handle.bookmark_untrack(name, remote).await {

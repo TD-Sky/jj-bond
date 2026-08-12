@@ -292,7 +292,7 @@ impl JJHandle {
                 "list",
                 "--all-remotes",
                 "-T",
-                r#"if(remote && tracked, concat("  ", "@", remote), if(remote, concat(name, "@", remote), name)) ++ "\n""#,
+                r#"if(remote && tracked, concat("  ", "@", remote, if(!synced, "*")), if(remote, concat(name, "@", remote), name)) ++ "\n""#,
             ])
             .output()
             .await?;
