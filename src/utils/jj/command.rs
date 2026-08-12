@@ -571,7 +571,7 @@ impl JJHandle {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum LogMode {
     #[default]
     Default,

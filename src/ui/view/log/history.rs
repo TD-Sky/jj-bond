@@ -18,7 +18,7 @@ use crate::{
         widgets::{LogHistory, LogHistoryState, Modal, TextAreaState},
     },
     utils::{
-        jj::{Abandon, Duplicate, Rebase, Split, SplitMode, Squash},
+        jj::{Abandon, Duplicate, LogMode, Rebase, Split, SplitMode, Squash},
         tui::{BoxText, LogText},
     },
 };
@@ -29,6 +29,7 @@ pub struct VState<'a> {
     pub view: &'a LogText,
     pub log_focus: &'a LogFocus,
     pub log_layout: &'a LogLayout,
+    pub log_mode: &'a LogMode,
     pub mount_point: &'a MountPoint<Message>,
     pub modal_abandon: Option<&'a Abandon>,
     pub modal_squash: Option<&'a Squash>,
@@ -52,6 +53,7 @@ pub fn view<'a>(
         view,
         log_focus,
         log_layout,
+        log_mode,
         mount_point,
         modal_abandon,
         modal_squash,
@@ -273,7 +275,11 @@ pub fn view<'a>(
                 KeyCode::Esc if *log_layout == LogLayout::HISTORY_FILES => {
                     LogMsg::Layout(LogLayout::HISTORY)
                 }
-                KeyCode::Esc if *log_layout == LogLayout::HISTORY => LogMsg::ResetMode,
+                KeyCode::Esc
+                    if *log_mode != LogMode::Default && *log_layout == LogLayout::HISTORY =>
+                {
+                    LogMsg::ResetMode
+                }
                 KeyCode::Char('K')
                     if k.modifiers == KeyModifiers::SHIFT
                         && *log_layout == LogLayout::HISTORY_FILES =>
