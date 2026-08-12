@@ -1,11 +1,12 @@
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::Text,
 };
 use ratzgo::{
     core::*,
     scroll::ScrollAction,
+    text::Line,
     widget::{BorderType, ListState, block, list},
 };
 
@@ -72,7 +73,7 @@ pub fn view<'a>(
 
     let mut v = block(inner);
     if let Some(id) = id {
-        v = v.title(id);
+        v = v.title(Line::from(id).style(Style::default().fg(Color::Indexed(13))));
     }
     v.bordered().border_type(BorderType::Rounded)
 }

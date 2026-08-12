@@ -1,5 +1,6 @@
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
+    style::{Color, Style},
     text::Text,
 };
 use ratzgo::{
@@ -66,10 +67,14 @@ pub fn view<'a>(
 
     let mut v = block(inner);
     if let Some(id) = id {
-        v = v.title(id);
+        v = v.title(Line::from(id).style(Style::default().fg(Color::Indexed(13))));
     }
     if let Some(file) = file {
-        v = v.title(Line::from(file).right_aligned());
+        v = v.title_bottom(
+            Line::from(file)
+                .right_aligned()
+                .style(Style::default().fg(Color::Indexed(14))),
+        );
     }
     v.bordered().border_type(BorderType::Rounded)
 }
