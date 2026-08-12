@@ -107,9 +107,10 @@ log-bookmark-list = [
   { key = "<Enter>", desc = "select / create bookmark" },
   { key = "<Esc>", desc = "close list / cancel input" },
   { key = "<Backspace>", desc = "delete input char" },
-  { key = "<C-u>", desc = "clear input" },
-  { key = "<C-b>", desc = "cursor left" },
-  { key = "<C-f>", desc = "cursor right" },
+  { key = "<C-d>", desc = "scroll down 50%" },
+  { key = "<C-u>", desc = "scroll up 50% / clear input" },
+  { key = "<C-b>", desc = "page up / cursor left" },
+  { key = "<C-f>", desc = "page down / cursor right" },
   { key = "<C-a>", desc = "cursor to start" },
   { key = "<C-e>", desc = "cursor to end" },
   { key = "?", desc = "help" }

@@ -21,10 +21,7 @@
 - [x] View history of a tag
 - [x] View operations
 - [x] Auto update stale workspace
-- [ ] Diff of a range of changes
-- [ ] Rebase bookmark
-- [ ] Search history via [fff](https://github.com/dmtrKovalenko/fff)
-- [ ] Mark all the unsynced bookmarks
+- [ ] [I want more features...](https://github.com/TD-Sky/jj-bond/issues/4)
 
 
 
