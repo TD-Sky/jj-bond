@@ -1,4 +1,8 @@
-use ratatui::{crossterm::event::KeyCode, macros::constraints, prelude::*};
+use ratatui::{
+    crossterm::event::{KeyCode, KeyModifiers},
+    macros::constraints,
+    prelude::*,
+};
 use ratzgo::{
     core::*,
     scroll::ScrollAction,
@@ -49,6 +53,22 @@ pub fn view<'a>(VState { view, state, input }: VState<'a>) -> Element<'a, Messag
                 .on_key(
                     |k| k.code == KeyCode::Char('j'),
                     LogMsg::TagListScroll(ScrollAction::Fixed(1)),
+                )
+                .on_key(
+                    |k| k.code == KeyCode::Char('d') && k.modifiers == KeyModifiers::CONTROL,
+                    LogMsg::TagListScroll(ScrollAction::Viewport(50)),
+                )
+                .on_key(
+                    |k| k.code == KeyCode::Char('u') && k.modifiers == KeyModifiers::CONTROL,
+                    LogMsg::TagListScroll(ScrollAction::Viewport(-50)),
+                )
+                .on_key(
+                    |k| k.code == KeyCode::Char('f') && k.modifiers == KeyModifiers::CONTROL,
+                    LogMsg::TagListScroll(ScrollAction::Viewport(100)),
+                )
+                .on_key(
+                    |k| k.code == KeyCode::Char('b') && k.modifiers == KeyModifiers::CONTROL,
+                    LogMsg::TagListScroll(ScrollAction::Viewport(-100)),
                 )
                 .on_key(|k| k.code == KeyCode::Enter, LogMsg::TagListSelect)
                 .on_key(|k| k.code == KeyCode::Esc, LogMsg::TagListClose)
