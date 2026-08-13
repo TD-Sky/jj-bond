@@ -30,7 +30,7 @@
 ### Cargo
 
 ```console
-$ cargo install jj-bond
+$ JB_NO_GIT=1 cargo install jj-bond
 ```
 
 ### AUR

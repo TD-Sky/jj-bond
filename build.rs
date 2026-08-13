@@ -1,6 +1,6 @@
 use std::{env, error::Error};
 
-use vergen_gitcl::{Build, Emitter, Gitcl};
+use vergen_gix::{Build, Emitter, Gix};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut v = Emitter::default();
@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("cargo::rustc-env=VERGEN_GIT_SHA=no-git");
         }
         None => {
-            v.add_instructions(&Gitcl::builder().sha(true).build())?;
+            v.add_instructions(&Gix::builder().sha(true).build())?;
         }
     }
 

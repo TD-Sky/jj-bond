@@ -44,7 +44,7 @@ eros = "0.7"
 clap = { version = "4.6", features = ["derive"] }
 
 [build-dependencies]
-vergen-gitcl = { version = "10.0", features = ["build"] }
+vergen-gix = { version = "10.0", features = ["build"] }
 
 [lints.clippy]
 module_inception = "allow"
