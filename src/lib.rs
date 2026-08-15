@@ -38,8 +38,8 @@ pub mod ui {
         }
         pub mod tags {
             mod history;
-            mod list;
             mod tags;
+            mod tree;
 
             pub use tags::*;
         }
@@ -77,13 +77,13 @@ pub mod utils {
         pub use notify::*;
     }
     pub mod tui {
-        mod bookmark;
         mod log;
         mod text;
+        mod tree;
 
-        pub use bookmark::*;
         pub use log::*;
         pub use text::*;
+        pub use tree::*;
     }
     pub mod log;
 }

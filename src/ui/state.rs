@@ -22,7 +22,7 @@ use crate::{
     },
     utils::{
         jj::{Abandon, Duplicate, JJHandle, LogMode, Rebase, Split, Squash},
-        tui::{BookmarkTree, BoxText, LogText},
+        tui::{BoxText, LogText, TreeText},
     },
 };
 
@@ -68,7 +68,7 @@ pub struct MainState {
     pub log_pushing: ThinCell<bool>,
     pub log_modal_unsync: Option<BoxText>,
     pub log_modal_unsync_state: ListState,
-    pub bookmarks: BookmarkTree,
+    pub bookmarks: TreeText,
     pub bookmarks_state: TreeState<ByteString>,
     pub bookmarks_history_view: LogText,
     pub bookmarks_history_debounce: OnceCell<UnsyncDebounce<Message>>,
@@ -76,13 +76,15 @@ pub struct MainState {
     pub bookmarks_modal_delete: Option<ByteString>,
     pub bookmarks_modal_remotes: Option<BookmarkTrack>,
     pub bookmarks_modal_remotes_state: ListState,
-    pub tags: BoxText,
-    pub tags_state: ListState,
-    pub tags_reloc: TagRelocate,
+    pub tags: TreeText,
+    pub tags_state: TreeState<ByteString>,
     pub tags_history_view: LogText,
     pub tags_history_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub tags_history_state: LogHistoryState,
-    pub tags_modal_delete_tag: Option<SmolStr>,
+    pub tags_modal_delete: Option<ByteString>,
+    pub tags_modal_push: Option<TagPush>,
+    pub tags_modal_remotes: Option<TagTrack>,
+    pub tags_modal_remotes_state: ListState,
     pub op_view: BoxText,
     pub op_state: ParagraphState,
 }
@@ -161,20 +163,20 @@ impl LogRelocate {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum TagRelocate {
-    Name(SmolStr),
-    Index(usize),
-}
-
-impl Default for TagRelocate {
-    fn default() -> Self {
-        Self::Index(0)
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct BookmarkTrack {
     pub bookmark: ByteString,
     pub remotes: Vec<SmolStr>,
+}
+
+#[derive(Debug, Default)]
+pub struct TagTrack {
+    pub tag: ByteString,
+    pub remotes: Vec<SmolStr>,
+}
+
+#[derive(Debug, Default)]
+pub struct TagPush {
+    pub name: ByteString,
+    pub remote: ByteString,
 }

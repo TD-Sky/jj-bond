@@ -3,57 +3,73 @@ use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
     layout::Constraint,
     style::{Modifier, Style},
-    text::Text,
     widgets::Padding,
 };
 use ratzgo::{
     core::*,
     scroll::ScrollAction,
-    text::Line,
+    text::{Line, Text},
     widget::{BorderType, ListState, MountPoint, block, list},
 };
 use smol_str::SmolStr;
 
 use crate::{
     ui::{
-        BookmarksMsg, Message,
+        Message, TagPush, TagsMsg,
         widgets::{Modal, Tree, TreeState},
     },
     utils::tui::TreeText,
 };
 
+#[derive(Debug)]
 pub struct VState<'a> {
-    pub view: &'a TreeText,
     pub state: &'a mut TreeState<ByteString>,
+    pub view: &'a TreeText,
     pub mount_point: &'a MountPoint<Message>,
-    pub modal_delete: Option<&'a ByteString>,
+    pub modal_delete: Option<&'a str>,
+    pub modal_push: Option<&'a TagPush>,
     pub modal_remotes: Option<(&'a [SmolStr], &'a mut ListState)>,
 }
 
 pub fn view<'a>(
     VState {
-        view,
         state,
-        mount_point,
+        view,
         modal_delete,
+        modal_push,
+        mount_point,
         modal_remotes,
     }: VState<'a>,
-) -> impl Into<Element<'a, BookmarksMsg>> {
-    if let Some(bookmark) = modal_delete {
+) -> impl Into<Element<'a, TagsMsg>> {
+    if let Some(tag) = modal_delete {
+        mount_point.mount(
+            Modal::new(" Delete Tag ", format!("delete tag `{tag}` ?"))
+                .on_key(
+                    |k| k.code == KeyCode::Char('y'),
+                    TagsMsg::DeleteConfirm(true).into(),
+                )
+                .on_key(
+                    |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
+                    TagsMsg::DeleteConfirm(false).into(),
+                )
+                .on_key(|k| k.code == KeyCode::Char('?'), TagsMsg::Help.into()),
+            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+        );
+    } else if let Some(push) = modal_push {
         mount_point.mount(
             Modal::new(
-                " Delete Bookmark ",
-                format!("delete bookmark `{bookmark}` ?"),
+                " Push Tag ",
+                format!("push tag `{}` to `{}` ?", push.name, push.remote),
             )
             .on_key(
                 |k| k.code == KeyCode::Char('y'),
-                BookmarksMsg::DeleteConfirm(true).into(),
+                TagsMsg::PushConfirm(true).into(),
             )
             .on_key(
                 |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
-                BookmarksMsg::DeleteConfirm(false).into(),
+                TagsMsg::PushConfirm(false).into(),
             )
-            .on_key(|k| k.code == KeyCode::Char('?'), BookmarksMsg::Help.into()),
+            .on_key(|k| k.code == KeyCode::Char('?'), TagsMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some((remotes, state)) = modal_remotes {
@@ -63,23 +79,23 @@ pub fn view<'a>(
             .active(true)
             .on_key_with(|k| {
                 let msg = match k.code {
-                    KeyCode::Char('k') => BookmarksMsg::ScrollRemotes(ScrollAction::Fixed(-1)),
-                    KeyCode::Char('j') => BookmarksMsg::ScrollRemotes(ScrollAction::Fixed(1)),
+                    KeyCode::Char('k') => TagsMsg::ScrollRemotes(ScrollAction::Fixed(-1)),
+                    KeyCode::Char('j') => TagsMsg::ScrollRemotes(ScrollAction::Fixed(1)),
                     KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
-                        BookmarksMsg::ScrollRemotes(ScrollAction::Viewport(50))
+                        TagsMsg::ScrollRemotes(ScrollAction::Viewport(50))
                     }
                     KeyCode::Char('u') if k.modifiers == KeyModifiers::CONTROL => {
-                        BookmarksMsg::ScrollRemotes(ScrollAction::Viewport(-50))
+                        TagsMsg::ScrollRemotes(ScrollAction::Viewport(-50))
                     }
                     KeyCode::Char('f') if k.modifiers == KeyModifiers::CONTROL => {
-                        BookmarksMsg::ScrollRemotes(ScrollAction::Viewport(100))
+                        TagsMsg::ScrollRemotes(ScrollAction::Viewport(100))
                     }
                     KeyCode::Char('b') if k.modifiers == KeyModifiers::CONTROL => {
-                        BookmarksMsg::ScrollRemotes(ScrollAction::Viewport(-100))
+                        TagsMsg::ScrollRemotes(ScrollAction::Viewport(-100))
                     }
-                    KeyCode::Enter => BookmarksMsg::TrackConfirm(true),
-                    KeyCode::Esc => BookmarksMsg::TrackConfirm(false),
-                    KeyCode::Char('?') => BookmarksMsg::Help,
+                    KeyCode::Enter => TagsMsg::TrackConfirm(true),
+                    KeyCode::Esc => TagsMsg::TrackConfirm(false),
+                    KeyCode::Char('?') => TagsMsg::Help,
                     _ => return None,
                 };
                 Some(msg.into())
@@ -96,36 +112,37 @@ pub fn view<'a>(
 
     let inner = Tree::new(view.get(), state)
         .active(true)
-        .decorate(|v| v.highlight_style(Style::default().add_modifier(Modifier::REVERSED)))
+        .decorate(|v| v.highlight_style(Style::new().add_modifier(Modifier::REVERSED)))
         .on_key_with(|k| {
             let msg = match k.code {
-                KeyCode::Char('k') => BookmarksMsg::ScrollTree(ScrollAction::Fixed(-1)),
-                KeyCode::Char('j') => BookmarksMsg::ScrollTree(ScrollAction::Fixed(1)),
+                KeyCode::Char('k') => TagsMsg::ScrollTree(ScrollAction::Fixed(-1)),
+                KeyCode::Char('j') => TagsMsg::ScrollTree(ScrollAction::Fixed(1)),
                 KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
-                    BookmarksMsg::ScrollTree(ScrollAction::Viewport(50))
+                    TagsMsg::ScrollTree(ScrollAction::Viewport(50))
                 }
                 KeyCode::Char('u') if k.modifiers == KeyModifiers::CONTROL => {
-                    BookmarksMsg::ScrollTree(ScrollAction::Viewport(-50))
+                    TagsMsg::ScrollTree(ScrollAction::Viewport(-50))
                 }
                 KeyCode::Char('f') if k.modifiers == KeyModifiers::CONTROL => {
-                    BookmarksMsg::ScrollTree(ScrollAction::Viewport(100))
+                    TagsMsg::ScrollTree(ScrollAction::Viewport(100))
                 }
                 KeyCode::Char('b') if k.modifiers == KeyModifiers::CONTROL => {
-                    BookmarksMsg::ScrollTree(ScrollAction::Viewport(-100))
+                    TagsMsg::ScrollTree(ScrollAction::Viewport(-100))
                 }
-                KeyCode::Char('l') => BookmarksMsg::BookmarkOpen,
-                KeyCode::Char('h') => BookmarksMsg::BookmarkClose,
+                KeyCode::Char('l') => TagsMsg::TagOpen,
+                KeyCode::Char('h') => TagsMsg::TagClose,
                 KeyCode::Char('K') if k.modifiers == KeyModifiers::SHIFT => {
-                    BookmarksMsg::ScrollHistory(ScrollAction::Fixed(-1))
+                    TagsMsg::ScrollHistory(ScrollAction::Fixed(-1))
                 }
                 KeyCode::Char('J') if k.modifiers == KeyModifiers::SHIFT => {
-                    BookmarksMsg::ScrollHistory(ScrollAction::Fixed(1))
+                    TagsMsg::ScrollHistory(ScrollAction::Fixed(1))
                 }
-                KeyCode::Char('t') => BookmarksMsg::Track,
-                KeyCode::Char('u') => BookmarksMsg::Untrack,
-                KeyCode::Char('d') => BookmarksMsg::Delete,
-                KeyCode::Enter => BookmarksMsg::ViewHistory,
-                KeyCode::Char('?') => BookmarksMsg::Help,
+                KeyCode::Char('t') => TagsMsg::Track,
+                KeyCode::Char('u') => TagsMsg::Untrack,
+                KeyCode::Char('d') => TagsMsg::Delete,
+                KeyCode::Char('p') => TagsMsg::Push,
+                KeyCode::Enter => TagsMsg::ViewHistory,
+                KeyCode::Char('?') => TagsMsg::Help,
                 _ => return None,
             };
             Some(msg)
