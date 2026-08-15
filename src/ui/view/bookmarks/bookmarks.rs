@@ -1,3 +1,4 @@
+use bytestring::ByteString;
 use ratatui::macros::constraints;
 use ratzgo::{core::*, event::DefaultContext, widget::row};
 
@@ -12,7 +13,7 @@ use crate::{
     },
     utils::{
         jj::LogMode,
-        tui::{BookmarkTree, LogText},
+        tui::{LogText, TreeText},
     },
 };
 
@@ -89,14 +90,9 @@ pub async fn update(
         }
         BookmarksMsg::ScrollTree(v) => {
             state.bookmarks_state.scroll_vertical(v);
-            let bookmark = match state.bookmarks_state.selected() {
-                [bm] => bm.clone(),
-                [bm, rm] => format!("{bm}{rm}").into(),
-                _ => {
-                    return;
-                }
+            let Some(bookmark) = selected_bookmark(state) else {
+                return;
             };
-
             debounce_history(state, LogMode::Bookmark(bookmark));
         }
         BookmarksMsg::ScrollHistory(v) => {
@@ -113,12 +109,9 @@ pub async fn update(
             state.bookmarks_state.close(&path);
         }
         BookmarksMsg::UpdateHistory { text, version } => {
-            if state.bookmarks_history_debounce().version() != version {
-                let bookmark = match state.bookmarks_state.selected() {
-                    [bm] => bm.clone(),
-                    [bm, rm] => format!("{bm}{rm}").into(),
-                    _ => return,
-                };
+            if state.bookmarks_history_debounce().version() != version
+                && let Some(bookmark) = selected_bookmark(state)
+            {
                 debounce_history(state, LogMode::Bookmark(bookmark));
             } else {
                 state.bookmarks_history_view = text;
@@ -126,15 +119,12 @@ pub async fn update(
             }
         }
         BookmarksMsg::ViewHistory => {
+            let Some(bookmark) = selected_bookmark(state) else {
+                return;
+            };
+
             state.nav_tab = Tab::Log;
 
-            let bookmark = match state.bookmarks_state.selected() {
-                [bm] => bm.clone(),
-                [bm, rm] => format!("{bm}{rm}").into(),
-                _ => {
-                    return;
-                }
-            };
             state.log_mode = LogMode::Bookmark(bookmark);
             state.log_history_state.reset();
             state.log_reloc = LogRelocate::Index {
@@ -255,7 +245,7 @@ pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) 
         jj_handle
             .bookmark_tree()
             .await
-            .map(|v| BookmarksMsg::UpdateTree(BookmarkTree::new(v)))
+            .map(|v| BookmarksMsg::UpdateTree(TreeText::new(v)))
     });
 }
 
@@ -269,4 +259,12 @@ fn debounce_history(state: &mut MainState, mode: LogMode) {
                 version,
             })
         });
+}
+
+fn selected_bookmark(state: &MainState) -> Option<ByteString> {
+    match state.bookmarks_state.selected() {
+        [bookmark] => Some(bookmark.clone()),
+        [bookmark, remote] => Some(format!("{bookmark}{}", remote.trim_end_matches('*')).into()),
+        _ => None,
+    }
 }

@@ -166,13 +166,17 @@ bookmarks-tree = [
   { key = "?", desc = "help" },
 ]
 
-tags-list = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
-  { key = "<C-d>", desc = "scroll down 50%" },
-  { key = "<C-u>", desc = "scroll up 50%" },
-  { key = "<C-f>", desc = "page down" },
-  { key = "<C-b>", desc = "page up" },
+tags-tree = [
+  { key = "k", desc = "tree up" },
+  { key = "j", desc = "tree down" },
+  { key = "<C-d>", desc = "tree scroll down 50%" },
+  { key = "<C-u>", desc = "tree scroll up 50%" },
+  { key = "<C-f>", desc = "tree page down" },
+  { key = "<C-b>", desc = "tree page up" },
+  { key = "l", desc = "open tag node" },
+  { key = "h", desc = "close tag node" },
+  { key = "K", desc = "history scroll up" },
+  { key = "J", desc = "history scroll down" },
   { key = "d", desc = "delete tag" },
   { key = "<Enter>", desc = "view history in Log tab" },
   { key = "?", desc = "help" },

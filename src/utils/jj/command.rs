@@ -400,6 +400,25 @@ impl JJHandle {
         Ok(())
     }
 
+    pub async fn tag_tree(&self) -> Result<String, CommandError> {
+        let output = self
+            .cmd_read()
+            .args([
+                "tag",
+                "list",
+                "--all-remotes",
+                "-T",
+                r#"if(remote, concat("  ", "@", remote, if(!synced, "*")), name) ++ "\n""#,
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(String::from_utf8_lossy(&output.stdout).into())
+    }
+
     pub async fn tag_delete(&self, tag: &str) -> Result<(), CommandError> {
         let output = self
             .cmd_exec()
@@ -576,7 +595,7 @@ pub enum LogMode {
     #[default]
     Default,
     Bookmark(ByteString),
-    Tag(SmolStr),
+    Tag(ByteString),
 }
 
 #[derive(Debug)]

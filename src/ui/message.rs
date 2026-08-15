@@ -6,7 +6,7 @@ use crate::{
     ui::view::{log::LogLayout, nav::Tab},
     utils::{
         jj::Split,
-        tui::{BookmarkTree, LogText},
+        tui::{LogText, TreeText},
     },
 };
 
@@ -80,7 +80,7 @@ pub enum LogMsg {
 
 #[derive(Debug)]
 pub enum BookmarksMsg {
-    UpdateTree(BookmarkTree),
+    UpdateTree(TreeText),
     UpdateHistory { text: LogText, version: u32 },
     ScrollTree(ScrollAction),
     ScrollHistory(ScrollAction),
@@ -98,9 +98,11 @@ pub enum BookmarksMsg {
 
 #[derive(Debug)]
 pub enum TagsMsg {
-    UpdateList(Vec<u8>),
-    ScrollList(ScrollAction),
+    UpdateTree(TreeText),
+    ScrollTree(ScrollAction),
     ScrollHistory(ScrollAction),
+    TagOpen,
+    TagClose,
     UpdateHistory { text: LogText, version: u32 },
     ViewHistory,
     Delete,

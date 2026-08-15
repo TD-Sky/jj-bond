@@ -1,16 +1,20 @@
+use bytestring::ByteString;
 use ratatui::macros::constraints;
 use ratzgo::{core::*, event::DefaultContext, widget::row};
 
 use crate::{
     ui::{
-        HelpMsg, LogRelocate, MainState, Message, State, TagRelocate, TagsMsg,
+        HelpMsg, LogRelocate, MainState, Message, State, TagsMsg,
         view::{
             log::LogLayout,
             nav::Tab,
-            tags::{history, list},
+            tags::{history, tree},
         },
     },
-    utils::{jj::LogMode, tui::LogText},
+    utils::{
+        jj::LogMode,
+        tui::{LogText, TreeText},
+    },
 };
 
 pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
@@ -19,11 +23,11 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
     row! {
         css;
         [
-            list::view(list::VState {
-                view: state.tags.get(),
+            tree::view(tree::VState {
+                view: &state.tags,
                 state: &mut state.tags_state,
                 mount_point: &state.mount_point,
-                modal_delete_tag: state.tags_modal_delete_tag.as_deref(),
+                modal_delete: state.tags_modal_delete.as_deref(),
             }),
             history::view(history::VState {
                 view: &state.tags_history_view,
@@ -36,62 +40,45 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
 
 pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContext<Message, State>) {
     match msg {
-        TagsMsg::UpdateList(v) => {
-            state.tags = v.into();
-            state.tags.lines.dedup_by(|lhs, rhs| {
-                lhs.spans[0].content.as_ref() == rhs.spans[0].content.as_ref()
-            });
+        TagsMsg::UpdateTree(v) => {
+            state.tags = v;
 
-            let pair = match &state.tags_reloc {
-                TagRelocate::Name(tag) => {
-                    state.tags.lines.iter().enumerate().find_map(|(i, line)| {
-                        line.spans
-                            .first()
-                            .filter(|v| v.content == tag.as_str())
-                            .map(|v| (i, v.content.as_ref()))
-                    })
-                }
-                TagRelocate::Index(index) => match *index < state.tags.height() {
-                    true => state.tags.lines[*index]
-                        .spans
-                        .first()
-                        .map(|v| (*index, v.content.as_ref())),
-                    false => state
-                        .tags
-                        .lines
-                        .first()
-                        .and_then(|v| v.spans.first().map(|v| (0, v.content.as_ref()))),
-                },
-            };
-
-            let Some((index, tag)) = pair else {
-                state.tags_state.select(None);
-                state.tags_reloc = TagRelocate::default();
+            if state.tags.get().is_empty() {
+                state.tags_state.select(vec![]);
                 state.tags_history_view = LogText::default();
                 state.tags_history_state.reset();
                 state.tags_history_debounce_mut().cancel();
 
                 return;
+            }
+
+            let reset = match state.tags_state.selected() {
+                [tag] => state.tags.get().iter().all(|v| v.identifier() != tag),
+                [tag, remote] => state
+                    .tags
+                    .get()
+                    .iter()
+                    .find(|v| v.identifier() == tag)
+                    .is_none_or(|v| v.children().iter().all(|v| v.identifier() != remote)),
+                [] => true,
+                _ => unreachable!(),
             };
 
-            state.tags_state.select(Some(index));
-            state.tags_reloc = TagRelocate::Name(tag.into());
+            if reset {
+                state.tags.get().iter().for_each(|v| {
+                    state.tags_state.open(vec![v.identifier().clone()]);
+                });
 
-            debounce_history(state, LogMode::Tag(tag.into()));
+                let tag = state.tags.get()[0].identifier().clone();
+                state.tags_state.select(vec![tag.clone()]);
+
+                debounce_history(state, LogMode::Tag(tag));
+            }
         }
-        TagsMsg::ScrollList(v) => {
-            state.tags_state.scroll_vertical(v, state.tags.height());
-
-            if let Some(index) = state.tags_state.selected()
-                && let Some(tag) = state
-                    .tags
-                    .lines
-                    .get(index)
-                    .map(|v| v.spans[0].content.as_ref())
-            {
-                state.tags_reloc = TagRelocate::Name(tag.into());
-
-                debounce_history(state, LogMode::Tag(tag.into()));
+        TagsMsg::ScrollTree(v) => {
+            state.tags_state.scroll_vertical(v);
+            if let Some(tag) = selected_tag(state) {
+                debounce_history(state, LogMode::Tag(tag));
             }
         }
         TagsMsg::ScrollHistory(v) => {
@@ -99,45 +86,52 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 .tags_history_state
                 .scroll_vertical(&state.tags_history_view, v);
         }
+        TagsMsg::TagOpen => {
+            let path = state.tags_state.selected().to_vec();
+            state.tags_state.open(path);
+        }
+        TagsMsg::TagClose => {
+            let path = state.tags_state.selected().to_vec();
+            state.tags_state.close(&path);
+        }
         TagsMsg::UpdateHistory { text, version } => {
             if state.tags_history_debounce().version() != version
-                && let TagRelocate::Name(tag) = &state.tags_reloc
+                && let Some(tag) = selected_tag(state)
             {
-                debounce_history(state, LogMode::Tag(tag.clone()));
+                debounce_history(state, LogMode::Tag(tag));
             } else {
                 state.tags_history_view = text;
                 state.tags_history_state.reset();
             }
         }
         TagsMsg::ViewHistory => {
-            if let TagRelocate::Name(tag) = &state.tags_reloc {
-                state.nav_tab = Tab::Log;
+            let Some(tag) = selected_tag(state) else {
+                return;
+            };
 
-                state.log_mode = LogMode::Tag(tag.clone());
-                state.log_history_state.reset();
-                state.log_reloc = LogRelocate::Index {
-                    index: 0,
-                    file: None,
-                };
-                state.log_layout = LogLayout::HISTORY_FILES;
-                state.log_focus = state.log_layout.into();
-                ctx.queue().push(Message::Refresh);
-            }
+            state.nav_tab = Tab::Log;
+
+            state.log_mode = LogMode::Tag(tag);
+            state.log_history_state.reset();
+            state.log_reloc = LogRelocate::Index {
+                index: 0,
+                file: None,
+            };
+            state.log_layout = LogLayout::HISTORY_FILES;
+            state.log_focus = state.log_layout.into();
+            ctx.queue().push(Message::Refresh);
         }
         TagsMsg::Delete => {
-            if let TagRelocate::Name(tag) = &state.tags_reloc {
-                state.tags_modal_delete_tag = Some(tag.clone());
+            if let [tag] = state.tags_state.selected() {
+                state.tags_modal_delete = Some(tag.clone());
             }
         }
         TagsMsg::DeleteConfirm(yes) => {
-            if let Some(tag) = state.tags_modal_delete_tag.take()
+            if let Some(tag) = state.tags_modal_delete.take()
                 && yes
             {
                 match state.jj_handle.tag_delete(&tag).await {
-                    Ok(_) => {
-                        state.tags_reloc =
-                            TagRelocate::Index(state.tags_state.selected().unwrap_or_default());
-                    }
+                    Ok(_) => {}
                     Err(e) => {
                         ratzgo::log::error("`tag delete`", e.into_text());
                     }
@@ -145,10 +139,10 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             }
         }
         TagsMsg::Help => {
-            let page = if state.tags_modal_delete_tag.is_some() {
+            let page = if state.tags_modal_delete.is_some() {
                 "confirm-modal"
             } else {
-                "tags-list"
+                "tags-tree"
             };
 
             ctx.queue().push(HelpMsg::Page(page));
@@ -158,8 +152,12 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
 
 pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) {
     let jj_handle = state.jj_handle.clone();
-    ctx.queue()
-        .spawn_try(async move { jj_handle.tags().await.map(TagsMsg::UpdateList) });
+    ctx.queue().spawn_try(async move {
+        jj_handle
+            .tag_tree()
+            .await
+            .map(|s| TagsMsg::UpdateTree(TreeText::new(s)))
+    });
 }
 
 fn debounce_history(state: &mut MainState, mode: LogMode) {
@@ -172,4 +170,12 @@ fn debounce_history(state: &mut MainState, mode: LogMode) {
                 version,
             })
         });
+}
+
+fn selected_tag(state: &MainState) -> Option<ByteString> {
+    match state.tags_state.selected() {
+        [tag] => Some(tag.clone()),
+        [tag, remote] => Some(format!("{tag}{}", remote.trim_end_matches('*')).into()),
+        _ => None,
+    }
 }

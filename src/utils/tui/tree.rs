@@ -4,12 +4,12 @@ use bytestring::ByteString;
 use tui_tree_widget::TreeItem;
 
 #[derive(Debug, Default)]
-pub struct BookmarkTree {
+pub struct TreeText {
     _raw: ByteString,
     items: Vec<TreeItem<'static, ByteString>>,
 }
 
-impl BookmarkTree {
+impl TreeText {
     pub fn new(raw: String) -> Self {
         let raw: ByteString = raw.into();
 
@@ -27,7 +27,7 @@ impl BookmarkTree {
                     let remote = TreeItem::new_leaf(raw.slice_ref(remote), remote);
                     items
                         .last_mut()
-                        .expect("must be bookmark")
+                        .expect("must be parent node")
                         .add_child(remote)
                         .expect("must be valid");
                 }

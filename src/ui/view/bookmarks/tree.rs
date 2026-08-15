@@ -18,11 +18,11 @@ use crate::{
         BookmarksMsg, Message,
         widgets::{Modal, Tree, TreeState},
     },
-    utils::tui::BookmarkTree,
+    utils::tui::TreeText,
 };
 
 pub struct VState<'a> {
-    pub view: &'a BookmarkTree,
+    pub view: &'a TreeText,
     pub state: &'a mut TreeState<ByteString>,
     pub mount_point: &'a MountPoint<Message>,
     pub modal_delete: Option<&'a ByteString>,
