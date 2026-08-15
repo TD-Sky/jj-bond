@@ -85,15 +85,14 @@ pub async fn update(
                 };
                 state.bookmarks_state.select(vec![bookmark.clone()]);
 
-                debounce_history(state, LogMode::Bookmark(bookmark));
+                debounce_history(state, bookmark, None);
             }
         }
         BookmarksMsg::ScrollTree(v) => {
             state.bookmarks_state.scroll_vertical(v);
-            let Some(bookmark) = selected_bookmark(state) else {
-                return;
-            };
-            debounce_history(state, LogMode::Bookmark(bookmark));
+            if let Some((bookmark, remote)) = selected_bookmark(state) {
+                debounce_history(state, bookmark, remote);
+            }
         }
         BookmarksMsg::ScrollHistory(v) => {
             state
@@ -110,17 +109,26 @@ pub async fn update(
         }
         BookmarksMsg::UpdateHistory { text, version } => {
             if state.bookmarks_history_debounce().version() != version
-                && let Some(bookmark) = selected_bookmark(state)
+                && let Some((bookmark, remote)) = selected_bookmark(state)
             {
-                debounce_history(state, LogMode::Bookmark(bookmark));
+                debounce_history(state, bookmark, remote);
             } else {
                 state.bookmarks_history_view = text;
                 state.bookmarks_history_state.reset();
             }
         }
         BookmarksMsg::ViewHistory => {
-            let Some(bookmark) = selected_bookmark(state) else {
-                return;
+            let bookmark = match selected_bookmark(state) {
+                Some((bookmark, Some(remote)))
+                    if let Ok(true) = state
+                        .jj_handle
+                        .bookmark_remote_present(&bookmark, &remote)
+                        .await =>
+                {
+                    format!("{bookmark}@{remote}").into()
+                }
+                Some((name, None)) => name,
+                _ => return,
             };
 
             state.nav_tab = Tab::Log;
@@ -250,22 +258,39 @@ pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) 
     });
 }
 
-fn debounce_history(state: &mut MainState, mode: LogMode) {
+fn debounce_history(state: &mut MainState, bookmark: ByteString, remote: Option<ByteString>) {
     let jj = state.jj_handle.clone();
     state
         .bookmarks_history_debounce_mut()
         .spawn_try(|version| async move {
-            jj.log(&mode).await.map(|v| BookmarksMsg::UpdateHistory {
-                text: LogText::new(v),
-                version,
-            })
+            let bookmark = match remote {
+                Some(remote)
+                    if let Ok(true) = jj.bookmark_remote_present(&bookmark, &remote).await =>
+                {
+                    format!("{bookmark}@{remote}").into()
+                }
+                None => bookmark,
+                _ => {
+                    return Ok(BookmarksMsg::UpdateHistory {
+                        text: LogText::default(),
+                        version,
+                    });
+                }
+            };
+
+            jj.log(&LogMode::Bookmark(bookmark))
+                .await
+                .map(|v| BookmarksMsg::UpdateHistory {
+                    text: LogText::new(v),
+                    version,
+                })
         });
 }
 
-fn selected_bookmark(state: &MainState) -> Option<ByteString> {
+fn selected_bookmark(state: &MainState) -> Option<(ByteString, Option<ByteString>)> {
     match state.bookmarks_state.selected() {
-        [bookmark] => Some(bookmark.clone()),
-        [bookmark, remote] => Some(format!("{bookmark}@{remote}").into()),
+        [bookmark] => Some((bookmark.clone(), None)),
+        [bookmark, remote] => Some((bookmark.clone(), Some(remote.clone()))),
         _ => None,
     }
 }

@@ -77,13 +77,13 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 let tag = state.tags.get()[0].identifier().clone();
                 state.tags_state.select(vec![tag.clone()]);
 
-                debounce_history(state, LogMode::Tag(tag));
+                debounce_history(state, tag, None);
             }
         }
         TagsMsg::ScrollTree(v) => {
             state.tags_state.scroll_vertical(v);
-            if let Some(tag) = selected_tag(state) {
-                debounce_history(state, LogMode::Tag(tag));
+            if let Some((tag, remote)) = selected_tag(state) {
+                debounce_history(state, tag, remote);
             }
         }
         TagsMsg::ScrollHistory(v) => {
@@ -101,17 +101,23 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
         }
         TagsMsg::UpdateHistory { text, version } => {
             if state.tags_history_debounce().version() != version
-                && let Some(tag) = selected_tag(state)
+                && let Some((tag, remote)) = selected_tag(state)
             {
-                debounce_history(state, LogMode::Tag(tag));
+                debounce_history(state, tag, remote);
             } else {
                 state.tags_history_view = text;
                 state.tags_history_state.reset();
             }
         }
         TagsMsg::ViewHistory => {
-            let Some(tag) = selected_tag(state) else {
-                return;
+            let tag = match selected_tag(state) {
+                Some((tag, Some(remote)))
+                    if let Ok(true) = state.jj_handle.tag_remote_present(&tag, &remote).await =>
+                {
+                    format!("{tag}@{remote}").into()
+                }
+                Some((name, None)) => name,
+                _ => return,
             };
 
             state.nav_tab = Tab::Log;
@@ -259,22 +265,37 @@ pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) 
     });
 }
 
-fn debounce_history(state: &mut MainState, mode: LogMode) {
+fn debounce_history(state: &mut MainState, tag: ByteString, remote: Option<ByteString>) {
     let jj = state.jj_handle.clone();
     state
         .tags_history_debounce_mut()
         .spawn_try(|version| async move {
-            jj.log(&mode).await.map(|v| TagsMsg::UpdateHistory {
-                text: LogText::new(v),
-                version,
-            })
+            let tag = match remote {
+                Some(remote) if let Ok(true) = jj.tag_remote_present(&tag, &remote).await => {
+                    format!("{tag}@{remote}").into()
+                }
+                None => tag,
+                _ => {
+                    return Ok(TagsMsg::UpdateHistory {
+                        text: LogText::default(),
+                        version,
+                    });
+                }
+            };
+
+            jj.log(&LogMode::Tag(tag))
+                .await
+                .map(|v| TagsMsg::UpdateHistory {
+                    text: LogText::new(v),
+                    version,
+                })
         });
 }
 
-fn selected_tag(state: &MainState) -> Option<ByteString> {
+fn selected_tag(state: &MainState) -> Option<(ByteString, Option<ByteString>)> {
     match state.tags_state.selected() {
-        [tag] => Some(tag.clone()),
-        [tag, remote] => Some(format!("{tag}@{remote}").into()),
+        [tag] => Some((tag.clone(), None)),
+        [tag, remote] => Some((tag.clone(), Some(remote.clone()))),
         _ => None,
     }
 }

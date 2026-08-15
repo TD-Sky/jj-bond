@@ -303,45 +303,6 @@ impl JJHandle {
         Ok(String::from_utf8_lossy(&output.stdout).into())
     }
 
-    pub async fn push(&self, bookmark: &str, remote: &str) -> Result<(), CommandError> {
-        let output = self
-            .cmd_exec()
-            .args(["git", "push", "--bookmark", bookmark, "--remote", remote])
-            .output()
-            .await?;
-        if !output.status.success() {
-            return Err(CommandError::Fail(output.stderr));
-        }
-
-        Ok(())
-    }
-
-    pub async fn push_tag(&self, name: &str, remote: &str) -> Result<(), CommandError> {
-        let output = self
-            .cmd_exec()
-            .args(["git", "push", "--tag", name, "--remote", remote])
-            .output()
-            .await?;
-        if !output.status.success() {
-            return Err(CommandError::Fail(output.stderr));
-        }
-
-        Ok(())
-    }
-
-    pub async fn remotes(&self) -> Result<Vec<u8>, CommandError> {
-        let output = self
-            .cmd_read()
-            .args(["git", "remote", "list"])
-            .output()
-            .await?;
-        if !output.status.success() {
-            return Err(CommandError::Fail(output.stderr));
-        }
-
-        Ok(output.stdout)
-    }
-
     pub async fn bookmark_remotes_untrack(
         &self,
         bookmark: &str,
@@ -381,6 +342,70 @@ impl JJHandle {
             .collect();
 
         Ok(remotes_untrack)
+    }
+
+    pub async fn bookmark_remote_present(
+        &self,
+        name: &str,
+        remote: &str,
+    ) -> Result<bool, CommandError> {
+        let output = self
+            .cmd_read()
+            .args([
+                "bookmark",
+                "list",
+                "--all-remotes",
+                "-T",
+                &format!(r#"if(tracked && name == "{name}" && remote == "{remote}", present)"#),
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(String::from_utf8_lossy(&output.stdout)
+            .parse()
+            .expect("must parse bool"))
+    }
+
+    pub async fn push(&self, bookmark: &str, remote: &str) -> Result<(), CommandError> {
+        let output = self
+            .cmd_exec()
+            .args(["git", "push", "--bookmark", bookmark, "--remote", remote])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(())
+    }
+
+    pub async fn push_tag(&self, name: &str, remote: &str) -> Result<(), CommandError> {
+        let output = self
+            .cmd_exec()
+            .args(["git", "push", "--tag", name, "--remote", remote])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(())
+    }
+
+    pub async fn remotes(&self) -> Result<Vec<u8>, CommandError> {
+        let output = self
+            .cmd_read()
+            .args(["git", "remote", "list"])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(output.stdout)
     }
 
     pub async fn tag_remotes_untrack(&self, tag: &str) -> Result<Vec<SmolStr>, CommandError> {
@@ -521,6 +546,27 @@ impl JJHandle {
                 "--all-remotes",
                 "-T",
                 &format!(r#"if(tracked && name == "{name}" && remote == "{remote}", synced)"#),
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(String::from_utf8_lossy(&output.stdout)
+            .parse()
+            .expect("must parse bool"))
+    }
+
+    pub async fn tag_remote_present(&self, name: &str, remote: &str) -> Result<bool, CommandError> {
+        let output = self
+            .cmd_read()
+            .args([
+                "tag",
+                "list",
+                "--all-remotes",
+                "-T",
+                &format!(r#"if(tracked && name == "{name}" && remote == "{remote}", present)"#),
             ])
             .output()
             .await?;
