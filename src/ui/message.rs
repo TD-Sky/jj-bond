@@ -101,12 +101,18 @@ pub enum TagsMsg {
     UpdateTree(TreeText),
     ScrollTree(ScrollAction),
     ScrollHistory(ScrollAction),
+    ScrollRemotes(ScrollAction),
     TagOpen,
     TagClose,
     UpdateHistory { text: LogText, version: u32 },
     ViewHistory,
+    Track,
+    TrackConfirm(bool),
+    Untrack,
     Delete,
     DeleteConfirm(bool),
+    Push,
+    PushConfirm(bool),
     Help,
 }
 

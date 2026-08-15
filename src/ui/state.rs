@@ -82,6 +82,9 @@ pub struct MainState {
     pub tags_history_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub tags_history_state: LogHistoryState,
     pub tags_modal_delete: Option<ByteString>,
+    pub tags_modal_push: Option<TagPush>,
+    pub tags_modal_remotes: Option<TagTrack>,
+    pub tags_modal_remotes_state: ListState,
     pub op_view: BoxText,
     pub op_state: ParagraphState,
 }
@@ -164,4 +167,16 @@ impl LogRelocate {
 pub struct BookmarkTrack {
     pub bookmark: ByteString,
     pub remotes: Vec<SmolStr>,
+}
+
+#[derive(Debug, Default)]
+pub struct TagTrack {
+    pub tag: ByteString,
+    pub remotes: Vec<SmolStr>,
+}
+
+#[derive(Debug, Default)]
+pub struct TagPush {
+    pub name: ByteString,
+    pub remote: ByteString,
 }

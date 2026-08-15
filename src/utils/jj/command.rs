@@ -316,6 +316,19 @@ impl JJHandle {
         Ok(())
     }
 
+    pub async fn push_tag(&self, name: &str, remote: &str) -> Result<(), CommandError> {
+        let output = self
+            .cmd_exec()
+            .args(["git", "push", "--tag", name, "--remote", remote])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(())
+    }
+
     pub async fn remotes(&self) -> Result<Vec<u8>, CommandError> {
         let output = self
             .cmd_read()
@@ -329,7 +342,10 @@ impl JJHandle {
         Ok(output.stdout)
     }
 
-    pub async fn remotes_untrack(&self, bookmark: &str) -> Result<Vec<SmolStr>, CommandError> {
+    pub async fn bookmark_remotes_untrack(
+        &self,
+        bookmark: &str,
+    ) -> Result<Vec<SmolStr>, CommandError> {
         let remotes = self.remotes().await?;
 
         if remotes.is_empty() {
@@ -365,6 +381,70 @@ impl JJHandle {
             .collect();
 
         Ok(remotes_untrack)
+    }
+
+    pub async fn tag_remotes_untrack(&self, tag: &str) -> Result<Vec<SmolStr>, CommandError> {
+        let remotes = self.remotes().await?;
+
+        if remotes.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let output = self
+            .cmd_read()
+            .args([
+                "tag",
+                "list",
+                "--all-remotes",
+                "-T",
+                &format!(r#"if(name == "{tag}" && remote, remote ++ "\n")"#),
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+        let remotes_track = String::from_utf8_lossy(&output.stdout);
+
+        let remotes_untrack = String::from_utf8_lossy(&remotes)
+            .lines()
+            .filter_map(|line| {
+                line.split_once(' ').and_then(|(remote, _)| {
+                    remotes_track
+                        .lines()
+                        .all(|v| v != remote)
+                        .then(|| remote.into())
+                })
+            })
+            .collect();
+
+        Ok(remotes_untrack)
+    }
+
+    pub async fn tag_track(&self, name: &str, remote: &str) -> Result<(), CommandError> {
+        let output = self
+            .cmd_exec()
+            .args(["tag", "track", name, "--remote", remote])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(())
+    }
+
+    pub async fn tag_untrack(&self, name: &str, remote: &str) -> Result<(), CommandError> {
+        let output = self
+            .cmd_exec()
+            .args(["tag", "untrack", name, "--remote", remote])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(())
     }
 
     pub async fn tags(&self) -> Result<Vec<u8>, CommandError> {
@@ -408,7 +488,7 @@ impl JJHandle {
                 "list",
                 "--all-remotes",
                 "-T",
-                r#"if(remote, concat("  ", "@", remote, if(!synced, "*")), name) ++ "\n""#,
+                r#"if(remote && tracked, concat("  ", "@", remote, if(!synced, "*")), if(remote, concat(name, "@", remote), name)) ++ "\n""#,
             ])
             .output()
             .await?;
@@ -430,6 +510,27 @@ impl JJHandle {
         }
 
         Ok(())
+    }
+
+    pub async fn tag_synced_remote(&self, name: &str, remote: &str) -> Result<bool, CommandError> {
+        let output = self
+            .cmd_read()
+            .args([
+                "tag",
+                "list",
+                "--all-remotes",
+                "-T",
+                &format!(r#"if(tracked && name == "{name}" && remote == "{remote}", synced)"#),
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(String::from_utf8_lossy(&output.stdout)
+            .parse()
+            .expect("must parse bool"))
     }
 
     pub async fn undo(&self) -> Result<(), CommandError> {

@@ -13,7 +13,7 @@ use crate::{
     },
     utils::{
         jj::LogMode,
-        tui::{LogText, TreeText},
+        tui::{LogText, TreeText, remote_arg},
     },
 };
 
@@ -151,13 +151,14 @@ pub async fn update(
                         }
                     }
                     None => {
-                        let remotes_untrack = match state.jj_handle.remotes_untrack(bm).await {
-                            Ok(v) => v,
-                            Err(e) => {
-                                ratzgo::log::error("remote_untracks", e.into_text());
-                                return;
-                            }
-                        };
+                        let remotes_untrack =
+                            match state.jj_handle.bookmark_remotes_untrack(bm).await {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    ratzgo::log::error("`bookmark remotes untrack`", e.into_text());
+                                    return;
+                                }
+                            };
                         if remotes_untrack.is_empty() {
                             return;
                         }
@@ -170,15 +171,36 @@ pub async fn update(
                 }
             }
         }
+        BookmarksMsg::TrackConfirm(yes) => {
+            if let Some(v) = state.bookmarks_modal_remotes.take()
+                && yes
+                && let Some(i) = state.bookmarks_modal_remotes_state.selected()
+                && let Some(remote) = v.remotes.get(i)
+            {
+                match state.jj_handle.bookmark_track(&v.bookmark, remote).await {
+                    Ok(_) => {
+                        state
+                            .bookmarks_state
+                            .select(vec![v.bookmark, format!("@{remote}").into()]);
+                    }
+                    Err(e) => {
+                        ratzgo::log::error("`bookmark track`", e.into_text());
+                    }
+                }
+            }
+        }
         BookmarksMsg::Untrack => {
             if let [name, remote] = state.bookmarks_state.selected()
-                && let Some(remote) = remote.trim_end_matches('*').strip_prefix('@')
-                && remote != "git"
+                && remote != "@git"
             {
-                match state.jj_handle.bookmark_untrack(name, remote).await {
+                match state
+                    .jj_handle
+                    .bookmark_untrack(name, remote_arg(remote))
+                    .await
+                {
                     Ok(_) => {
-                        let bookmark = format!("{name}@{remote}").into();
-                        state.bookmarks_state.select(vec![bookmark]);
+                        let bookmark = format!("{name}{remote}");
+                        state.bookmarks_state.select(vec![bookmark.into()]);
                     }
                     Err(e) => {
                         ratzgo::log::error("`bookmark untrack`", e.into_text());
@@ -186,7 +208,6 @@ pub async fn update(
                 }
             }
         }
-
         BookmarksMsg::Delete => {
             if let [name] = state.bookmarks_state.selected()
                 && !name.contains('@')
@@ -207,22 +228,6 @@ pub async fn update(
                 state
                     .bookmarks_modal_remotes_state
                     .scroll_vertical(action, v.remotes.len());
-            }
-        }
-        BookmarksMsg::TrackConfirm(yes) => {
-            if let Some(v) = state.bookmarks_modal_remotes.take()
-                && yes
-                && let Some(i) = state.bookmarks_modal_remotes_state.selected()
-                && let Some(remote) = v.remotes.get(i)
-            {
-                match state.jj_handle.bookmark_track(&v.bookmark, remote).await {
-                    Ok(_) => {
-                        state.bookmarks_state.select(vec![v.bookmark]);
-                    }
-                    Err(e) => {
-                        ratzgo::log::error("`bookmark track`", e.into_text());
-                    }
-                }
             }
         }
         BookmarksMsg::Help => {
@@ -264,7 +269,7 @@ fn debounce_history(state: &mut MainState, mode: LogMode) {
 fn selected_bookmark(state: &MainState) -> Option<ByteString> {
     match state.bookmarks_state.selected() {
         [bookmark] => Some(bookmark.clone()),
-        [bookmark, remote] => Some(format!("{bookmark}{}", remote.trim_end_matches('*')).into()),
+        [bookmark, remote] => Some(format!("{bookmark}{remote}").into()),
         _ => None,
     }
 }

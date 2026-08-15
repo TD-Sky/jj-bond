@@ -8,6 +8,7 @@ use ratatui::{
 use ratzgo::{
     core::*,
     scroll::ScrollAction,
+    text::Line,
     widget::{BorderType, ListState, MountPoint, block, list},
 };
 
@@ -224,7 +225,10 @@ pub fn view<'a>(
             });
 
         mount_point.mount(
-            block(inner).bordered().border_type(BorderType::Rounded),
+            block(inner)
+                .bordered()
+                .border_type(BorderType::Rounded)
+                .title(Line::from(" Push bookmark ").centered()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     }

@@ -4,7 +4,7 @@ use ratzgo::{core::*, event::DefaultContext, widget::row};
 
 use crate::{
     ui::{
-        HelpMsg, LogRelocate, MainState, Message, State, TagsMsg,
+        HelpMsg, LogRelocate, MainState, Message, State, TagPush, TagTrack, TagsMsg,
         view::{
             log::LogLayout,
             nav::Tab,
@@ -13,7 +13,7 @@ use crate::{
     },
     utils::{
         jj::LogMode,
-        tui::{LogText, TreeText},
+        tui::{LogText, TreeText, remote_arg},
     },
 };
 
@@ -28,6 +28,11 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
                 state: &mut state.tags_state,
                 mount_point: &state.mount_point,
                 modal_delete: state.tags_modal_delete.as_deref(),
+                modal_push: state.tags_modal_push.as_ref(),
+                modal_remotes: state
+                    .tags_modal_remotes
+                    .as_ref()
+                    .map(|v| (v.remotes.as_slice(), &mut state.tags_modal_remotes_state)),
             }),
             history::view(history::VState {
                 view: &state.tags_history_view,
@@ -122,25 +127,124 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             ctx.queue().push(Message::Refresh);
         }
         TagsMsg::Delete => {
-            if let [tag] = state.tags_state.selected() {
-                state.tags_modal_delete = Some(tag.clone());
+            if let [name] = state.tags_state.selected()
+                && !name.contains('@')
+            {
+                state.tags_modal_delete = Some(name.clone());
             }
         }
         TagsMsg::DeleteConfirm(yes) => {
             if let Some(tag) = state.tags_modal_delete.take()
                 && yes
+                && let Err(e) = state.jj_handle.tag_delete(&tag).await
             {
-                match state.jj_handle.tag_delete(&tag).await {
-                    Ok(_) => {}
-                    Err(e) => {
-                        ratzgo::log::error("`tag delete`", e.into_text());
+                ratzgo::log::error("`tag delete`", e.into_text());
+            }
+        }
+        TagsMsg::Track => {
+            if let [tag] = state.tags_state.selected() {
+                match tag.split_once('@') {
+                    Some((name, remote)) => match state.jj_handle.tag_track(name, remote).await {
+                        Ok(_) => {
+                            let name = tag.slice_ref(name);
+
+                            state.tags_state.select(vec![name]);
+                        }
+                        Err(e) => {
+                            ratzgo::log::error("`tag track`", e.into_text());
+                        }
+                    },
+                    None => {
+                        let remotes_untrack = match state.jj_handle.tag_remotes_untrack(tag).await {
+                            Ok(v) => v,
+                            Err(e) => {
+                                ratzgo::log::error("`tag remotes untrack`", e.into_text());
+                                return;
+                            }
+                        };
+                        if remotes_untrack.is_empty() {
+                            return;
+                        }
+                        state.tags_modal_remotes = Some(TagTrack {
+                            tag: tag.clone(),
+                            remotes: remotes_untrack,
+                        });
+                        state.tags_modal_remotes_state.reset();
                     }
                 }
             }
         }
+        TagsMsg::TrackConfirm(yes) => {
+            if let Some(v) = state.tags_modal_remotes.take()
+                && yes
+                && let Some(i) = state.tags_modal_remotes_state.selected()
+                && let Some(remote) = v.remotes.get(i)
+            {
+                match state.jj_handle.tag_track(&v.tag, remote).await {
+                    Ok(_) => {
+                        state
+                            .tags_state
+                            .select(vec![v.tag, format!("@{remote}").into()]);
+                    }
+                    Err(e) => {
+                        ratzgo::log::error("`tag track`", e.into_text());
+                    }
+                }
+            }
+        }
+        TagsMsg::ScrollRemotes(action) => {
+            if let Some(v) = &state.tags_modal_remotes {
+                state
+                    .tags_modal_remotes_state
+                    .scroll_vertical(action, v.remotes.len());
+            }
+        }
+        TagsMsg::Untrack => {
+            if let [name, remote] = state.tags_state.selected()
+                && remote != "@git"
+            {
+                match state.jj_handle.tag_untrack(name, remote_arg(remote)).await {
+                    Ok(_) => {
+                        let tag = format!("{name}{remote}");
+                        state.tags_state.select(vec![tag.into()]);
+                    }
+                    Err(e) => {
+                        ratzgo::log::error("`tag untrack`", e.into_text());
+                    }
+                }
+            }
+        }
+        TagsMsg::Push => {
+            if let [name, remote] = state.tags_state.selected()
+                && remote != "@git"
+            {
+                let remote_arg = remote_arg(remote);
+                if let Ok(false) = state.jj_handle.tag_synced_remote(name, remote_arg).await {
+                    state.tags_modal_push = Some(TagPush {
+                        name: name.clone(),
+                        remote: remote.slice_ref(remote_arg),
+                    });
+                }
+            }
+        }
+        TagsMsg::PushConfirm(yes) => {
+            if let Some(v) = state.tags_modal_push.take()
+                && yes
+            {
+                match state.jj_handle.push_tag(&v.name, &v.remote).await {
+                    Ok(_) => {
+                        let path = vec![v.name, format!("@{}", v.remote).into()];
+                        state.tags_state.select(path);
+                    }
+                    Err(e) => ratzgo::log::error("`push tag`", e.into_text()),
+                }
+            }
+        }
         TagsMsg::Help => {
-            let page = if state.tags_modal_delete.is_some() {
+            let page = if state.tags_modal_delete.is_some() || state.tags_modal_push.is_some() {
                 "confirm-modal"
+            } else if state.tags_modal_remotes.is_some() {
+                "tags-remotes"
             } else {
                 "tags-tree"
             };
@@ -175,7 +279,7 @@ fn debounce_history(state: &mut MainState, mode: LogMode) {
 fn selected_tag(state: &MainState) -> Option<ByteString> {
     match state.tags_state.selected() {
         [tag] => Some(tag.clone()),
-        [tag, remote] => Some(format!("{tag}{}", remote.trim_end_matches('*')).into()),
+        [tag, remote] => Some(format!("{tag}{remote}").into()),
         _ => None,
     }
 }

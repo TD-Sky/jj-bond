@@ -78,10 +78,12 @@ pub mod utils {
     }
     pub mod tui {
         mod log;
+        mod remote;
         mod text;
         mod tree;
 
         pub use log::*;
+        pub use remote::*;
         pub use text::*;
         pub use tree::*;
     }

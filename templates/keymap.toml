@@ -31,7 +31,7 @@ log-history = [
   { key = "f", desc = "fetch" },
   { key = "b", desc = "open bookmark list" },
   { key = "t", desc = "open tag list" },
-  { key = "p", desc = "push" },
+  { key = "p", desc = "push bookmark" },
   { key = "?", desc = "help" },
 ]
 
@@ -178,8 +178,21 @@ tags-tree = [
   { key = "K", desc = "history scroll up" },
   { key = "J", desc = "history scroll down" },
   { key = "d", desc = "delete tag" },
+  { key = "p", desc = "push tag" },
   { key = "<Enter>", desc = "view history in Log tab" },
   { key = "?", desc = "help" },
+]
+
+tags-remotes = [
+  { key = "k", desc = "up" },
+  { key = "j", desc = "down" },
+  { key = "<C-d>", desc = "scroll down 50%" },
+  { key = "<C-u>", desc = "scroll up 50%" },
+  { key = "<C-f>", desc = "page down" },
+  { key = "<C-b>", desc = "page up" },
+  { key = "<Enter>", desc = "track selected remote" },
+  { key = "<Esc>", desc = "cancel track" },
+  { key = "?", desc = "help" }
 ]
 
 operations = [
