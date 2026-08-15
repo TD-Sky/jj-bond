@@ -76,7 +76,7 @@ pub fn view<'a>(
 
     if let Some(v) = modal_abandon {
         mount_point.mount(
-            Modal::new("Abandon", v.msg())
+            Modal::new(" Abandon ", v.msg())
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::AbandonConfirm(true).into(),
@@ -90,7 +90,7 @@ pub fn view<'a>(
         );
     } else if let Some(squash) = modal_squash {
         mount_point.mount(
-            Modal::new("Squash", squash.msg())
+            Modal::new(" Squash ", squash.msg())
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::SquashConfirm(true).into(),
@@ -104,7 +104,7 @@ pub fn view<'a>(
         );
     } else if let Some(rebase) = modal_rebase {
         mount_point.mount(
-            Modal::new("Rebase", rebase.msg())
+            Modal::new(" Rebase ", rebase.msg())
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::RebaseConfirm(true).into(),
@@ -118,7 +118,7 @@ pub fn view<'a>(
         );
     } else if let Some(dup) = modal_duplicate {
         mount_point.mount(
-            Modal::new("Duplicate", dup.msg())
+            Modal::new(" Duplicate ", dup.msg())
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::DuplicateConfirm(true).into(),
@@ -137,7 +137,7 @@ pub fn view<'a>(
         };
 
         mount_point.mount(
-            Modal::new("Split", content)
+            Modal::new(" Split ", content)
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::SplitConfirm(true).into(),
@@ -169,7 +169,7 @@ pub fn view<'a>(
         });
     } else if modal_undo {
         mount_point.mount(
-            Modal::new("Undo", "undo an operation?")
+            Modal::new(" Undo ", "undo an operation?")
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::UndoConfirm(true).into(),
@@ -183,7 +183,7 @@ pub fn view<'a>(
         );
     } else if modal_redo {
         mount_point.mount(
-            Modal::new("Redo", "redo an operation?")
+            Modal::new(" Redo ", "redo an operation?")
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     LogMsg::RedoConfirm(true).into(),

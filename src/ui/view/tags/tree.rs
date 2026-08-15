@@ -43,7 +43,7 @@ pub fn view<'a>(
 ) -> impl Into<Element<'a, TagsMsg>> {
     if let Some(tag) = modal_delete {
         mount_point.mount(
-            Modal::new("Delete Tag", format!("delete tag `{tag}` ?"))
+            Modal::new(" Delete Tag ", format!("delete tag `{tag}` ?"))
                 .on_key(
                     |k| k.code == KeyCode::Char('y'),
                     TagsMsg::DeleteConfirm(true).into(),
@@ -58,7 +58,7 @@ pub fn view<'a>(
     } else if let Some(push) = modal_push {
         mount_point.mount(
             Modal::new(
-                Line::from(" Push Tag ").centered(),
+                " Push Tag ",
                 format!("push tag `{}` to `{}` ?", push.name, push.remote),
             )
             .on_key(
@@ -102,7 +102,10 @@ pub fn view<'a>(
             });
 
         mount_point.mount(
-            block(inner).bordered().border_type(BorderType::Rounded),
+            block(inner)
+                .bordered()
+                .border_type(BorderType::Rounded)
+                .title(Line::from(" Track ").centered()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     }

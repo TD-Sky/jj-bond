@@ -75,14 +75,17 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 });
 
                 let tag = state.tags.get()[0].identifier().clone();
-                state.tags_state.select(vec![tag.clone()]);
+                state.tags_state.select(vec![tag]);
+            }
 
-                debounce_history(state, tag, None);
+            if let Some((tag, remote)) = selected_tag(state) {
+                debounce_history(state, tag, remote);
             }
         }
         TagsMsg::ScrollTree(v) => {
             state.tags_state.scroll_vertical(v);
             if let Some((tag, remote)) = selected_tag(state) {
+                state.tags_history_state.reset();
                 debounce_history(state, tag, remote);
             }
         }
@@ -106,7 +109,6 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 debounce_history(state, tag, remote);
             } else {
                 state.tags_history_view = text;
-                state.tags_history_state.reset();
             }
         }
         TagsMsg::ViewHistory => {
@@ -130,6 +132,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             };
             state.log_layout = LogLayout::HISTORY_FILES;
             state.log_focus = state.log_layout.into();
+            state.tags_history_state.reset();
             ctx.queue().push(Message::Refresh);
         }
         TagsMsg::Delete => {
@@ -142,9 +145,11 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
         TagsMsg::DeleteConfirm(yes) => {
             if let Some(tag) = state.tags_modal_delete.take()
                 && yes
-                && let Err(e) = state.jj_handle.tag_delete(&tag).await
             {
-                ratzgo::log::error("`tag delete`", e.into_text());
+                match state.jj_handle.tag_delete(&tag).await {
+                    Ok(_) => state.tags_history_state.reset(),
+                    Err(e) => ratzgo::log::error("`tag delete`", e.into_text()),
+                }
             }
         }
         TagsMsg::Track => {
@@ -155,6 +160,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                             let name = tag.slice_ref(name);
 
                             state.tags_state.select(vec![name]);
+                            state.tags_history_state.reset();
                         }
                         Err(e) => {
                             ratzgo::log::error("`tag track`", e.into_text());
@@ -189,18 +195,12 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 match state.jj_handle.tag_track(&v.tag, remote).await {
                     Ok(_) => {
                         state.tags_state.select(vec![v.tag, remote.as_str().into()]);
+                        state.tags_history_state.reset();
                     }
                     Err(e) => {
                         ratzgo::log::error("`tag track`", e.into_text());
                     }
                 }
-            }
-        }
-        TagsMsg::ScrollRemotes(action) => {
-            if let Some(v) = &state.tags_modal_remotes {
-                state
-                    .tags_modal_remotes_state
-                    .scroll_vertical(action, v.remotes.len());
             }
         }
         TagsMsg::Untrack => {
@@ -211,11 +211,19 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                     Ok(_) => {
                         let tag = format!("{name}@{remote}");
                         state.tags_state.select(vec![tag.into()]);
+                        state.tags_history_state.reset();
                     }
                     Err(e) => {
                         ratzgo::log::error("`tag untrack`", e.into_text());
                     }
                 }
+            }
+        }
+        TagsMsg::ScrollRemotes(action) => {
+            if let Some(v) = &state.tags_modal_remotes {
+                state
+                    .tags_modal_remotes_state
+                    .scroll_vertical(action, v.remotes.len());
             }
         }
         TagsMsg::Push => {
@@ -236,6 +244,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
                 match state.jj_handle.push_tag(&v.name, &v.remote).await {
                     Ok(_) => {
                         state.tags_state.select(vec![v.name, v.remote]);
+                        state.tags_history_state.reset();
                     }
                     Err(e) => ratzgo::log::error("`push tag`", e.into_text()),
                 }

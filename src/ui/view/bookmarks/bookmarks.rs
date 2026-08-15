@@ -52,8 +52,12 @@ pub async fn update(
             state.bookmarks = v;
 
             if state.bookmarks.get().is_empty() {
+                state.bookmarks_state.select(vec![]);
                 state.bookmarks_history_view = LogText::default();
+                state.bookmarks_history_state.reset();
                 state.bookmarks_history_debounce_mut().cancel();
+
+                return;
             }
 
             let reset = match state.bookmarks_state.selected() {
@@ -62,10 +66,12 @@ pub async fn update(
                     .get()
                     .iter()
                     .all(|bm| bm.identifier() != bookmark),
-                [bookmark, remote] => state.bookmarks.get().iter().all(|bm| {
-                    bm.identifier() != bookmark
-                        && bm.children().iter().all(|rm| rm.identifier() != remote)
-                }),
+                [bookmark, remote] => state
+                    .bookmarks
+                    .get()
+                    .iter()
+                    .find(|v| v.identifier() == bookmark)
+                    .is_none_or(|v| v.children().iter().all(|v| v.identifier() != remote)),
                 [] => true,
                 _ => unreachable!(),
             };
@@ -75,22 +81,18 @@ pub async fn update(
                     state.bookmarks_state.open(vec![v.identifier().clone()]);
                 });
 
-                let Some(bookmark) = state
-                    .bookmarks
-                    .get()
-                    .first()
-                    .map(|v| v.identifier().clone())
-                else {
-                    return;
-                };
-                state.bookmarks_state.select(vec![bookmark.clone()]);
+                let bookmark = state.bookmarks.get()[0].identifier().clone();
+                state.bookmarks_state.select(vec![bookmark]);
+            }
 
-                debounce_history(state, bookmark, None);
+            if let Some((bookmark, remote)) = selected_bookmark(state) {
+                debounce_history(state, bookmark, remote);
             }
         }
         BookmarksMsg::ScrollTree(v) => {
             state.bookmarks_state.scroll_vertical(v);
             if let Some((bookmark, remote)) = selected_bookmark(state) {
+                state.bookmarks_history_state.reset();
                 debounce_history(state, bookmark, remote);
             }
         }
@@ -114,7 +116,6 @@ pub async fn update(
                 debounce_history(state, bookmark, remote);
             } else {
                 state.bookmarks_history_view = text;
-                state.bookmarks_history_state.reset();
             }
         }
         BookmarksMsg::ViewHistory => {
@@ -141,6 +142,7 @@ pub async fn update(
             };
             state.log_layout = LogLayout::HISTORY_FILES;
             state.log_focus = state.log_layout.into();
+            state.bookmarks_history_state.reset();
             ctx.queue().push(Message::Refresh);
         }
         BookmarksMsg::Track => {
@@ -152,6 +154,7 @@ pub async fn update(
                                 let name = bm.slice_ref(name);
 
                                 state.bookmarks_state.select(vec![name]);
+                                state.bookmarks_history_state.reset();
                             }
                             Err(e) => {
                                 ratzgo::log::error("`bookmark track`", e.into_text());
@@ -190,6 +193,7 @@ pub async fn update(
                         state
                             .bookmarks_state
                             .select(vec![v.bookmark, remote.as_str().into()]);
+                        state.bookmarks_history_state.reset();
                     }
                     Err(e) => {
                         ratzgo::log::error("`bookmark track`", e.into_text());
@@ -205,6 +209,7 @@ pub async fn update(
                     Ok(_) => {
                         let bookmark = format!("{name}@{remote}");
                         state.bookmarks_state.select(vec![bookmark.into()]);
+                        state.bookmarks_history_state.reset();
                     }
                     Err(e) => {
                         ratzgo::log::error("`bookmark untrack`", e.into_text());
@@ -222,9 +227,11 @@ pub async fn update(
         BookmarksMsg::DeleteConfirm(yes) => {
             if let Some(name) = state.bookmarks_modal_delete.take()
                 && yes
-                && let Err(e) = state.jj_handle.bookmark_delete(&name).await
             {
-                ratzgo::log::error("`bookmark delete`", e.into_text());
+                match state.jj_handle.bookmark_delete(&name).await {
+                    Ok(_) => state.bookmarks_history_state.reset(),
+                    Err(e) => ratzgo::log::error("`bookmark delete`", e.into_text()),
+                }
             }
         }
         BookmarksMsg::ScrollRemotes(action) => {

@@ -9,6 +9,7 @@ use ratatui::{
 use ratzgo::{
     core::*,
     scroll::ScrollAction,
+    text::Line,
     widget::{BorderType, ListState, MountPoint, block, list},
 };
 use smol_str::SmolStr;
@@ -40,16 +41,19 @@ pub fn view<'a>(
 ) -> impl Into<Element<'a, BookmarksMsg>> {
     if let Some(bookmark) = modal_delete {
         mount_point.mount(
-            Modal::new("Delete Bookmark", format!("delete bookmark `{bookmark}` ?"))
-                .on_key(
-                    |k| k.code == KeyCode::Char('y'),
-                    BookmarksMsg::DeleteConfirm(true).into(),
-                )
-                .on_key(
-                    |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
-                    BookmarksMsg::DeleteConfirm(false).into(),
-                )
-                .on_key(|k| k.code == KeyCode::Char('?'), BookmarksMsg::Help.into()),
+            Modal::new(
+                " Delete Bookmark ",
+                format!("delete bookmark `{bookmark}` ?"),
+            )
+            .on_key(
+                |k| k.code == KeyCode::Char('y'),
+                BookmarksMsg::DeleteConfirm(true).into(),
+            )
+            .on_key(
+                |k| k.code == KeyCode::Char('n') || k.code == KeyCode::Esc,
+                BookmarksMsg::DeleteConfirm(false).into(),
+            )
+            .on_key(|k| k.code == KeyCode::Char('?'), BookmarksMsg::Help.into()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     } else if let Some((remotes, state)) = modal_remotes {
@@ -82,7 +86,10 @@ pub fn view<'a>(
             });
 
         mount_point.mount(
-            block(inner).bordered().border_type(BorderType::Rounded),
+            block(inner)
+                .bordered()
+                .border_type(BorderType::Rounded)
+                .title(Line::from(" Track ").centered()),
             |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
         );
     }

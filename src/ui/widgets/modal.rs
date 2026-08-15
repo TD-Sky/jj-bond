@@ -20,7 +20,7 @@ pub struct Modal<'a, Message> {
 impl<'a, Message> Modal<'a, Message> {
     pub fn new(title: impl Into<Line<'a>>, text: impl Into<Text<'a>>) -> Self {
         Self {
-            title: title.into(),
+            title: title.into().centered(),
             text: text.into(),
             area: Default::default(),
             on_key: Default::default(),
