@@ -227,7 +227,8 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             }
         }
         TagsMsg::Push => {
-            if let [name, remote] = state.tags_state.selected()
+            if !*state.log_pushing.borrow()
+                && let [name, remote] = state.tags_state.selected()
                 && remote != "git"
                 && let Ok(false) = state.jj_handle.tag_synced_remote(name, remote).await
             {
@@ -241,13 +242,21 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             if let Some(v) = state.tags_modal_push.take()
                 && yes
             {
-                match state.jj_handle.push_tag(&v.name, &v.remote).await {
-                    Ok(_) => {
-                        state.tags_state.select(vec![v.name, v.remote]);
-                        state.tags_history_state.reset();
+                let jj_handle = state.jj_handle.clone();
+                let pushing = state.log_pushing.clone();
+
+                compio::runtime::spawn(async move {
+                    *pushing.borrow() = true;
+                    let res = jj_handle.push_tag(&v.name, &v.remote).await;
+                    *pushing.borrow() = false;
+                    if let Err(e) = res {
+                        ratzgo::log::error("`push tag`", e.into_text())
                     }
-                    Err(e) => ratzgo::log::error("`push tag`", e.into_text()),
-                }
+                })
+                .detach();
+
+                // force update anyway
+                ctx.queue().push(Message::Refresh);
             }
         }
         TagsMsg::Help => {

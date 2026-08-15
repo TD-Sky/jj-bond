@@ -940,15 +940,18 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 let pushing = state.log_pushing.clone();
                 let jj_handle = state.jj_handle.clone();
 
-                *pushing.borrow() = true;
-                ctx.queue().spawn(async move {
-                    let res = jj_handle.push(&bookmark, &remote).await;
+                compio::runtime::spawn(async move {
+                    *pushing.borrow() = true;
+                    let res = jj_handle.push_bookmark(&bookmark, &remote).await;
                     *pushing.borrow() = false;
                     if let Err(e) = res {
-                        ratzgo::log::error("`git push`", e.into_text());
+                        ratzgo::log::error("`push bookmark`", e.into_text());
                     }
-                    Message::Refresh // force update anyway
-                });
+                })
+                .detach();
+
+                // force update anyway
+                ctx.queue().push(Message::Refresh);
             }
         }
         LogMsg::Help => {

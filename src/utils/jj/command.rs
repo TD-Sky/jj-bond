@@ -369,7 +369,7 @@ impl JJHandle {
             .expect("must parse bool"))
     }
 
-    pub async fn push(&self, bookmark: &str, remote: &str) -> Result<(), CommandError> {
+    pub async fn push_bookmark(&self, bookmark: &str, remote: &str) -> Result<(), CommandError> {
         let output = self
             .cmd_exec()
             .args(["git", "push", "--bookmark", bookmark, "--remote", remote])
