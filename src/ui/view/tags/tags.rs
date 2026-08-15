@@ -13,7 +13,7 @@ use crate::{
     },
     utils::{
         jj::LogMode,
-        tui::{LogText, TreeText, remote_arg},
+        tui::{LogText, TreeText},
     },
 };
 
@@ -182,9 +182,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             {
                 match state.jj_handle.tag_track(&v.tag, remote).await {
                     Ok(_) => {
-                        state
-                            .tags_state
-                            .select(vec![v.tag, format!("@{remote}").into()]);
+                        state.tags_state.select(vec![v.tag, remote.as_str().into()]);
                     }
                     Err(e) => {
                         ratzgo::log::error("`tag track`", e.into_text());
@@ -201,11 +199,11 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
         }
         TagsMsg::Untrack => {
             if let [name, remote] = state.tags_state.selected()
-                && remote != "@git"
+                && remote != "git"
             {
-                match state.jj_handle.tag_untrack(name, remote_arg(remote)).await {
+                match state.jj_handle.tag_untrack(name, remote).await {
                     Ok(_) => {
-                        let tag = format!("{name}{remote}");
+                        let tag = format!("{name}@{remote}");
                         state.tags_state.select(vec![tag.into()]);
                     }
                     Err(e) => {
@@ -216,15 +214,13 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
         }
         TagsMsg::Push => {
             if let [name, remote] = state.tags_state.selected()
-                && remote != "@git"
+                && remote != "git"
+                && let Ok(false) = state.jj_handle.tag_synced_remote(name, remote).await
             {
-                let remote_arg = remote_arg(remote);
-                if let Ok(false) = state.jj_handle.tag_synced_remote(name, remote_arg).await {
-                    state.tags_modal_push = Some(TagPush {
-                        name: name.clone(),
-                        remote: remote.slice_ref(remote_arg),
-                    });
-                }
+                state.tags_modal_push = Some(TagPush {
+                    name: name.clone(),
+                    remote: remote.clone(),
+                });
             }
         }
         TagsMsg::PushConfirm(yes) => {
@@ -233,8 +229,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             {
                 match state.jj_handle.push_tag(&v.name, &v.remote).await {
                     Ok(_) => {
-                        let path = vec![v.name, format!("@{}", v.remote).into()];
-                        state.tags_state.select(path);
+                        state.tags_state.select(vec![v.name, v.remote]);
                     }
                     Err(e) => ratzgo::log::error("`push tag`", e.into_text()),
                 }
@@ -279,7 +274,7 @@ fn debounce_history(state: &mut MainState, mode: LogMode) {
 fn selected_tag(state: &MainState) -> Option<ByteString> {
     match state.tags_state.selected() {
         [tag] => Some(tag.clone()),
-        [tag, remote] => Some(format!("{tag}{remote}").into()),
+        [tag, remote] => Some(format!("{tag}@{remote}").into()),
         _ => None,
     }
 }

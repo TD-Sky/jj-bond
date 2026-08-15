@@ -13,7 +13,7 @@ use crate::{
     },
     utils::{
         jj::LogMode,
-        tui::{LogText, TreeText, remote_arg},
+        tui::{LogText, TreeText},
     },
 };
 
@@ -181,7 +181,7 @@ pub async fn update(
                     Ok(_) => {
                         state
                             .bookmarks_state
-                            .select(vec![v.bookmark, format!("@{remote}").into()]);
+                            .select(vec![v.bookmark, remote.as_str().into()]);
                     }
                     Err(e) => {
                         ratzgo::log::error("`bookmark track`", e.into_text());
@@ -191,15 +191,11 @@ pub async fn update(
         }
         BookmarksMsg::Untrack => {
             if let [name, remote] = state.bookmarks_state.selected()
-                && remote != "@git"
+                && remote != "git"
             {
-                match state
-                    .jj_handle
-                    .bookmark_untrack(name, remote_arg(remote))
-                    .await
-                {
+                match state.jj_handle.bookmark_untrack(name, remote).await {
                     Ok(_) => {
-                        let bookmark = format!("{name}{remote}");
+                        let bookmark = format!("{name}@{remote}");
                         state.bookmarks_state.select(vec![bookmark.into()]);
                     }
                     Err(e) => {
@@ -269,7 +265,7 @@ fn debounce_history(state: &mut MainState, mode: LogMode) {
 fn selected_bookmark(state: &MainState) -> Option<ByteString> {
     match state.bookmarks_state.selected() {
         [bookmark] => Some(bookmark.clone()),
-        [bookmark, remote] => Some(format!("{bookmark}{remote}").into()),
+        [bookmark, remote] => Some(format!("{bookmark}@{remote}").into()),
         _ => None,
     }
 }

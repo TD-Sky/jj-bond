@@ -24,8 +24,10 @@ impl TreeText {
                     items.push(bookmark);
                 }
                 Some(remote) => {
-                    let remote =
-                        TreeItem::new_leaf(raw.slice_ref(remote.trim_end_matches('*')), remote);
+                    let remote = TreeItem::new_leaf(
+                        raw.slice_ref(remote.trim_start_matches('@').trim_end_matches('*')),
+                        remote,
+                    );
                     items
                         .last_mut()
                         .expect("must be parent node")
