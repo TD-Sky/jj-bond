@@ -83,7 +83,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             }
         }
         TagsMsg::ScrollTree(v) => {
-            state.tags_state.scroll_vertical(v);
+            state.tags_state.scroll_lines(v);
             if let Some((tag, remote)) = selected_tag(state) {
                 state.tags_history_state.reset();
                 debounce_history(state, tag, remote);
@@ -223,7 +223,7 @@ pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContex
             if let Some(v) = &state.tags_modal_remotes {
                 state
                     .tags_modal_remotes_state
-                    .scroll_vertical(action, v.remotes.len());
+                    .scroll_lines(action, v.remotes.len());
             }
         }
         TagsMsg::Push => {

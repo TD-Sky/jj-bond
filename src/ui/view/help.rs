@@ -40,7 +40,7 @@ pub fn update(state: &mut State, msg: HelpMsg) {
         }
         HelpMsg::Scroll(action) => {
             if let Some(page) = state.page {
-                state.state.scroll_vertical(action, keymap_at(page).len());
+                state.state.scroll_lines(action, keymap_at(page).len());
             }
         }
         HelpMsg::Close => {

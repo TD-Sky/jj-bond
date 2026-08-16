@@ -120,7 +120,7 @@ impl<I> TreeState<I>
 where
     I: Clone + PartialEq + Eq + Hash,
 {
-    pub fn scroll_vertical(&mut self, action: ScrollAction) {
+    pub fn scroll_lines(&mut self, action: ScrollAction) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,
             ScrollAction::Viewport(n) => (self.area.height as f32 * n as f32 * 0.01) as i16,

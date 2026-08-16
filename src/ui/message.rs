@@ -39,6 +39,7 @@ pub enum LogMsg {
     Layout(LogLayout),
     ScrollHistory(ScrollAction),
     ScrollDiff(ScrollAction),
+    ScrollHDiff(ScrollAction),
     ScrollShow(ScrollAction),
     ScrollFiles(ScrollAction),
     New { parent: SmolStr },
