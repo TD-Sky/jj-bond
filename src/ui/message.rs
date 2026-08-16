@@ -76,6 +76,7 @@ pub enum LogMsg {
     Push,
     PushConfirm(bool),
     Help,
+    Paste,
 }
 
 #[derive(Debug)]

@@ -984,6 +984,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
 
             ctx.queue().push(HelpMsg::Page(page));
         }
+        LogMsg::Paste => (),
     }
 }
 

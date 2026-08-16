@@ -26,7 +26,11 @@ pub fn view<'a>(VState { view, state, input }: VState<'a>) -> Element<'a, Messag
         Some(input) => {
             let input = TextArea::new(input)
                 .active(true)
-                .on_key_with(|k| Some(LogMsg::CreatingBookmark { key: *k }));
+                .on_key_with(|k| Some(LogMsg::CreatingBookmark { key: *k }))
+                .on_paste(|content, state| {
+                    state.insert_str(content.trim());
+                    LogMsg::Paste
+                });
             column! [
                 constraints![==1, ==100%];
                 [
