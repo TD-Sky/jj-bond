@@ -1,4 +1,4 @@
-use ratatui::layout::Constraint;
+use ratatui::macros::constraint;
 use ratzgo::{
     core::*,
     widget::{MountPoint, TableState},
@@ -25,7 +25,7 @@ pub fn view<'a>(
 ) -> Element<'a, Message> {
     if let Some(page) = page {
         mount_point.mount(keymap(state, page).into().map(Into::into), |area| {
-            area.centered(Constraint::Percentage(50), Constraint::Percentage(70))
+            area.centered(constraint!(==50%), constraint!(==70%))
         });
     }
 

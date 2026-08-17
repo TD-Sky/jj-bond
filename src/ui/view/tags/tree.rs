@@ -1,7 +1,6 @@
 use bytestring::ByteString;
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
-    layout::Constraint,
     style::{Modifier, Style},
     widgets::Padding,
 };
@@ -16,7 +15,7 @@ use smol_str::SmolStr;
 use crate::{
     ui::{
         Message, TagPush, TagsMsg,
-        widgets::{Modal, Tree, TreeState},
+        widgets::{Modal, Tree, TreeState, modal_area},
     },
     utils::tui::TreeText,
 };
@@ -53,7 +52,7 @@ pub fn view<'a>(
                     TagsMsg::DeleteConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), TagsMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some(push) = modal_push {
         mount_point.mount(
@@ -70,7 +69,7 @@ pub fn view<'a>(
                 TagsMsg::PushConfirm(false).into(),
             )
             .on_key(|k| k.code == KeyCode::Char('?'), TagsMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some((remotes, state)) = modal_remotes {
         let inner = list(state)
@@ -106,7 +105,7 @@ pub fn view<'a>(
                 .bordered()
                 .border_type(BorderType::Rounded)
                 .title(Line::from(" Track ").centered()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     }
 

@@ -1,6 +1,6 @@
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
-    layout::Constraint,
+    macros::constraint,
     style::{Modifier, Style},
     text::Text,
     widgets::Padding,
@@ -16,7 +16,7 @@ use crate::{
     ui::{
         LogMsg, Message,
         view::log::{LogFocus, LogLayout, bookmark_list, tag_list},
-        widgets::{LogHistory, LogHistoryState, Modal, TextAreaState},
+        widgets::{LogHistory, LogHistoryState, Modal, TextAreaState, modal_area},
     },
     utils::{
         jj::{Abandon, Duplicate, LogMode, Rebase, Split, SplitMode, Squash},
@@ -86,7 +86,7 @@ pub fn view<'a>(
                     LogMsg::AbandonConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some(squash) = modal_squash {
         mount_point.mount(
@@ -100,7 +100,7 @@ pub fn view<'a>(
                     LogMsg::SquashConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some(rebase) = modal_rebase {
         mount_point.mount(
@@ -114,7 +114,7 @@ pub fn view<'a>(
                     LogMsg::RebaseConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some(dup) = modal_duplicate {
         mount_point.mount(
@@ -128,7 +128,7 @@ pub fn view<'a>(
                     LogMsg::DuplicateConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some(Split { id, mode }) = modal_split {
         let content = match mode {
@@ -147,7 +147,7 @@ pub fn view<'a>(
                     LogMsg::SplitConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some(text) = modal_bookmark_list {
         let list = bookmark_list::view(bookmark_list::VState {
@@ -156,7 +156,7 @@ pub fn view<'a>(
             input: modal_bookmark_list_input,
         });
         mount_point.mount(list, |area| {
-            area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3))
+            area.centered(constraint!(==40%), constraint!(==40%))
         });
     } else if let Some(text) = modal_tag_list {
         let list = tag_list::view(tag_list::VState {
@@ -165,7 +165,7 @@ pub fn view<'a>(
             input: modal_tag_list_input,
         });
         mount_point.mount(list, |area| {
-            area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3))
+            area.centered(constraint!(==40%), constraint!(==40%))
         });
     } else if modal_undo {
         mount_point.mount(
@@ -179,7 +179,7 @@ pub fn view<'a>(
                     LogMsg::UndoConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if modal_redo {
         mount_point.mount(
@@ -193,7 +193,7 @@ pub fn view<'a>(
                     LogMsg::RedoConfirm(false).into(),
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     } else if let Some((bookmarks, state)) = modal_unsync {
         let inner = list(state)
@@ -229,7 +229,7 @@ pub fn view<'a>(
                 .bordered()
                 .border_type(BorderType::Rounded)
                 .title(Line::from(" Push bookmark ").centered()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(1, 3)),
+            modal_area,
         );
     }
     let yanking = state.yanking().is_some();
