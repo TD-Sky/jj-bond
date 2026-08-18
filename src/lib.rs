@@ -49,6 +49,7 @@ pub mod ui {
         mod log_history;
         mod modal;
         mod notification;
+        pub mod rebase;
         mod textarea;
         mod tree;
 

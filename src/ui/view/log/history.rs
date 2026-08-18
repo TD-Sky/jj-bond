@@ -16,7 +16,7 @@ use crate::{
     ui::{
         LogMsg, Message,
         view::log::{LogFocus, LogLayout, bookmark_list, tag_list},
-        widgets::{LogHistory, LogHistoryState, Modal, TextAreaState, modal_area},
+        widgets::{LogHistory, LogHistoryState, Modal, TextAreaState, modal_area, rebase},
     },
     utils::{
         jj::{Abandon, Duplicate, LogMode, Rebase, Split, SplitMode, Squash},
@@ -35,12 +35,15 @@ pub struct VState<'a> {
     pub modal_abandon: Option<&'a Abandon>,
     pub modal_squash: Option<&'a Squash>,
     pub modal_rebase: Option<&'a Rebase>,
+    pub modal_rebase_list: Option<&'a Text<'a>>,
+    pub modal_rebase_list_state: (&'a mut ListState, &'a mut ListState),
+    pub modal_rebase_from: Option<&'a str>,
     pub modal_split: Option<&'a Split>,
     pub modal_duplicate: Option<&'a Duplicate>,
-    pub modal_bookmark_list: Option<&'a Text<'static>>,
+    pub modal_bookmark_list: Option<&'a Text<'a>>,
     pub modal_bookmark_list_state: &'a mut ListState,
     pub modal_bookmark_list_input: Option<&'a mut TextAreaState>,
-    pub modal_tag_list: Option<&'a Text<'static>>,
+    pub modal_tag_list: Option<&'a Text<'a>>,
     pub modal_tag_list_state: &'a mut ListState,
     pub modal_tag_list_input: Option<&'a mut TextAreaState>,
     pub modal_undo: bool,
@@ -59,6 +62,9 @@ pub fn view<'a>(
         modal_abandon,
         modal_squash,
         modal_rebase,
+        modal_rebase_list,
+        modal_rebase_list_state,
+        modal_rebase_from,
         modal_split,
         modal_duplicate,
         modal_bookmark_list,
@@ -101,6 +107,19 @@ pub fn view<'a>(
                 )
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help.into()),
             modal_area,
+        );
+    } else if let Some(text) = modal_rebase_list {
+        let (from_state, to_state) = modal_rebase_list_state;
+        mount_point.mount(
+            rebase::view(rebase::VState {
+                view: text,
+                from_state,
+                to_state,
+                from: modal_rebase_from,
+            })
+            .into()
+            .map(Into::into),
+            |area| area.centered(constraint!(==50%), constraint!(==50%)),
         );
     } else if let Some(rebase) = modal_rebase {
         mount_point.mount(
@@ -258,11 +277,12 @@ pub fn view<'a>(
                 }
                 KeyCode::Char('u') => LogMsg::Undo,
                 KeyCode::Char('r') if k.modifiers == KeyModifiers::CONTROL => LogMsg::Redo,
-                KeyCode::Char('r') if let Some(change) = view.beacons().get(hover) => {
+                KeyCode::Char('r') if yanking && let Some(change) = view.beacons().get(hover) => {
                     LogMsg::Rebase {
                         id: change.id.clone(),
                     }
                 }
+                KeyCode::Char('r') => LogMsg::RebaseListOpen,
                 KeyCode::Char('f') if k.modifiers == KeyModifiers::CONTROL => {
                     LogMsg::ScrollHistory(ScrollAction::Viewport(100))
                 }

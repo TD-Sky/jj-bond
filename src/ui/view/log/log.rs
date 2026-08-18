@@ -33,6 +33,12 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
             modal_abandon: state.log_abandon.as_ref(),
             modal_squash: state.log_squash.as_ref(),
             modal_rebase: state.log_rebase.as_ref(),
+            modal_rebase_list: state.log_modal_rebase_list.as_deref(),
+            modal_rebase_list_state: (
+                &mut state.log_modal_rebase_list_state.0,
+                &mut state.log_modal_rebase_list_state.1,
+            ),
+            modal_rebase_from: state.log_modal_rebase_from.as_deref(),
             modal_duplicate: state.log_duplicate.as_ref(),
             modal_split: state.log_split.as_ref(),
             modal_bookmark_list: state.log_modal_bookmark_list.as_deref(),
@@ -63,6 +69,12 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                     modal_abandon: state.log_abandon.as_ref(),
                     modal_squash: state.log_squash.as_ref(),
                     modal_rebase: state.log_rebase.as_ref(),
+                    modal_rebase_list: state.log_modal_rebase_list.as_deref(),
+                    modal_rebase_list_state: (
+                        &mut state.log_modal_rebase_list_state.0,
+                        &mut state.log_modal_rebase_list_state.1,
+                    ),
+                    modal_rebase_from: state.log_modal_rebase_from.as_deref(),
                     modal_duplicate: state.log_duplicate.as_ref(),
                     modal_split: state.log_split.as_ref(),
                     modal_bookmark_list: state.log_modal_bookmark_list.as_deref(),
@@ -674,6 +686,111 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         LogMsg::Unyank => {
             state.log_history_state.unyank();
         }
+        LogMsg::RebaseListOpen => {
+            let s = match state.jj_handle.bookmarks().await {
+                Ok(s) => s,
+                Err(e) => {
+                    ratzgo::log::error("`bookmark list`", e.into_text());
+                    return;
+                }
+            };
+
+            let mut view: BoxText = s.into();
+            view.lines
+                .dedup_by(|lhs, rhs| lhs.spans[0].content == rhs.spans[0].content);
+
+            state.log_modal_rebase_list = Some(view);
+            state.log_modal_rebase_from = None;
+            state.log_modal_rebase_list_state.1.select(None);
+            if state
+                .log_modal_rebase_list
+                .as_ref()
+                .is_some_and(|view| !view.lines.is_empty())
+            {
+                state.log_modal_rebase_list_state.0.reset();
+            } else {
+                state.log_modal_rebase_list_state.0.select(None);
+            }
+        }
+        LogMsg::RebaseListClose => {
+            close_rebase_list(state);
+        }
+        LogMsg::RebaseListBack => {
+            state.log_modal_rebase_from = None;
+            state.log_modal_rebase_list_state.1.select(None);
+        }
+        LogMsg::RebaseListSelect => {
+            if let Some(from) = state.log_modal_rebase_from.clone() {
+                let to = state.log_modal_rebase_list.as_ref().and_then(|view| {
+                    state
+                        .log_modal_rebase_list_state
+                        .1
+                        .selected()
+                        .and_then(|i| {
+                            view.lines
+                                .iter()
+                                .filter(|line| line.spans[0].content != from.as_str())
+                                .nth(i)
+                                .map(|v| v.spans[0].content.as_ref())
+                        })
+                });
+                let Some(to) = to else {
+                    return;
+                };
+
+                state.log_rebase = Some(Rebase::One {
+                    from,
+                    to: to.into(),
+                });
+                state.log_rebase_clear_yank = false;
+                close_rebase_list(state);
+            } else {
+                let from = state.log_modal_rebase_list.as_ref().and_then(|view| {
+                    state
+                        .log_modal_rebase_list_state
+                        .0
+                        .selected()
+                        .and_then(|i| view.lines.get(i))
+                        .map(|v| v.spans[0].content.as_ref())
+                });
+                let Some(from) = from else {
+                    return;
+                };
+
+                state.log_modal_rebase_from = Some(from.into());
+                if state
+                    .log_modal_rebase_list
+                    .as_ref()
+                    .is_some_and(|view| view.lines.len() > 1)
+                {
+                    state.log_modal_rebase_list_state.1.reset();
+                } else {
+                    state.log_modal_rebase_list_state.1.select(None);
+                }
+            }
+        }
+        LogMsg::RebaseListScroll(action) => {
+            let Some(view) = state.log_modal_rebase_list.as_ref() else {
+                return;
+            };
+
+            if let Some(from) = state.log_modal_rebase_from.as_deref() {
+                let height = view
+                    .lines
+                    .iter()
+                    .filter(|line| line.spans[0].content != from)
+                    .count();
+                state
+                    .log_modal_rebase_list_state
+                    .1
+                    .scroll_lines(action, height);
+            } else {
+                state
+                    .log_modal_rebase_list_state
+                    .0
+                    .scroll_lines(action, view.lines.len());
+            }
+        }
         LogMsg::Rebase { id } => {
             state.log_rebase = match state.log_history_state.yanking() {
                 Some(Yanking::One { id: from }) => match from.split_once('/') {
@@ -719,12 +836,16 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 }
                 None => None,
             };
+            state.log_rebase_clear_yank = state.log_rebase.is_some();
         }
         LogMsg::RebaseConfirm(yes) => {
+            let clear_yank = std::mem::take(&mut state.log_rebase_clear_yank);
             if let Some(v) = state.log_rebase.take()
                 && yes
             {
-                state.log_history_state.unyank();
+                if clear_yank {
+                    state.log_history_state.unyank();
+                }
 
                 match state.jj_handle.rebase(&v).await {
                     Ok(_) => {
@@ -991,6 +1112,13 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         }
         LogMsg::Paste => (),
     }
+}
+
+fn close_rebase_list(state: &mut MainState) {
+    state.log_modal_rebase_list = None;
+    state.log_modal_rebase_from = None;
+    state.log_modal_rebase_list_state.0.select(None);
+    state.log_modal_rebase_list_state.1.select(None);
 }
 
 pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) {
