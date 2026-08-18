@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-08-18
+
+### Bug Fixes
+
+- *(no category)* Parsing log history correctly
+
+
+### Documentation
+
+- *(readme)* Configuration
+
+### Features
+
+- *(no category)* Allow paste when creating bookmark/tag
+
+- *(no category)* Scroll horizontally in Diff
+
+- *(no category)* Beautify modal
+
+
+### Miscellaneous Tasks
+
+- *(dep)* Update `ratzgo` to 0.1.1
+
 ## [0.1.3] - 2026-08-15
 
 ### Bug Fixes
