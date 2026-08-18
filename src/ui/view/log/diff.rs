@@ -63,6 +63,14 @@ pub fn view<'a>(
             |k| k.code == KeyCode::Char('b') && k.modifiers == KeyModifiers::CONTROL,
             LogMsg::ScrollDiff(ScrollAction::Viewport(-100)),
         )
+        .on_key(
+            |k| k.code == KeyCode::Char('h'),
+            LogMsg::ScrollHDiff(ScrollAction::Viewport(-25)),
+        )
+        .on_key(
+            |k| k.code == KeyCode::Char('l'),
+            LogMsg::ScrollHDiff(ScrollAction::Viewport(25)),
+        )
         .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help);
 
     let mut v = block(inner);

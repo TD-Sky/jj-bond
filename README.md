@@ -12,11 +12,11 @@
 - [x] View history, show, files, diff
 - [x] New, describe, edit, split, split parallelly change
 - [x] Abandon, squash, duplicate, rebase changes
-- [x] Fetch, push
+- [x] Fetch
 - [x] View bookmarks
-- [x] Create, set, delete, track, untrack bookmark
+- [x] Create, set, delete, track, untrack, push bookmark
 - [x] View tags
-- [x] Create, set, delete tag
+- [x] Create, set, delete, track, untrack, push tag
 - [x] View history of a bookmark
 - [x] View history of a tag
 - [x] View operations
@@ -52,6 +52,17 @@ $ paru -S jj-bond-bin
 ```console
 $ jb
 ```
+
+
+
+## Configuration
+
+Path:
+- Linux: `~/.config/jj-bond/config.toml`
+- macOS: `~/Library/Application Support/jj-bond/config.toml`
+- Windows: `{FOLDERID_RoamingAppData}/jj-bond/config.toml`
+
+jb will create a default config file when it doesn't exist.
 
 
 

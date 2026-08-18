@@ -82,74 +82,70 @@ impl LogText {
 
         let mut skip_line = false;
 
-        for (i_line, line) in log.iter().enumerate() {
+        'lines: for (i_line, line) in log.iter().enumerate() {
             if skip_line {
                 skip_line = false;
                 continue;
             }
 
-            let mut span_iter = line.iter().peekable();
+            let mut span_iter = line.iter();
 
             let mut change = JJChange::default();
             let mut id_parts = ["", "", ""];
 
-            while let Some(span) = span_iter.next() {
-                match change.beacon {
-                    '\x00' => {
-                        match span
-                            .content
-                            .chars()
-                            .find(|v| matches!(v, '@' | '◆' | '○' | '×' | '~'))
-                        {
-                            Some('~') => {
-                                break;
-                            }
-                            Some(c) => {
-                                change.beacon = c;
-                                change.range_line.start = i_line;
-
-                                skip_line = true;
-                            }
-                            _ => (),
-                        }
+            for span in span_iter.by_ref() {
+                match span
+                    .content
+                    .chars()
+                    .find(|v| matches!(v, '@' | '◆' | '○' | '×' | '~'))
+                {
+                    Some('~') => {
+                        continue 'lines;
                     }
-                    _ => {
-                        if !span_is_empty(&span.content) {
-                            id_parts[0] = &span.content;
+                    Some(c) => {
+                        change.beacon = c;
+                        change.range_line.start = i_line;
 
-                            match span_iter.peek() {
-                                Some(span) if span_is_empty(&span.content) => {
-                                    change.id = id_parts[0].into();
-                                }
-                                Some(_) => {
-                                    let part1 = span_iter.next().expect("must be `Some`");
-                                    id_parts[1] = &part1.content;
+                        skip_line = true;
 
-                                    if let Some(part2) = span_iter.peek()
-                                        && part2.content.starts_with('/')
-                                    {
-                                        id_parts[2] = &part2.content;
-                                    }
-
-                                    change.id = id_parts.into_iter().collect();
-                                }
-                                None => {
-                                    change.id = id_parts[0].into();
-                                }
-                            }
-
-                            if id_is_root(&change.id) {
-                                change.range_line.end = i_line + 1;
-                            } else {
-                                change.range_line.end = i_line + 2;
-                            }
-
-                            changes.push(change);
-                            break;
-                        }
+                        break;
                     }
+                    _ => (),
                 }
             }
+
+            if change.beacon == '\x00' {
+                continue;
+            }
+
+            while let Some(span) = span_iter.next() {
+                if span.content.starts_with(|c: char| c.is_ascii_alphabetic()) {
+                    id_parts[0] = &span.content;
+
+                    let span = span_iter
+                        .next()
+                        .expect("must follow with second change id part");
+                    id_parts[1] = &span.content;
+
+                    if let Some(span) = span_iter.next()
+                        && span.content.starts_with('/')
+                    {
+                        id_parts[2] = &span.content;
+                    }
+
+                    break;
+                }
+            }
+
+            change.id = id_parts.into_iter().collect();
+
+            if id_is_root(&change.id) {
+                change.range_line.end = i_line + 1;
+            } else {
+                change.range_line.end = i_line + 2;
+            }
+
+            changes.push(change);
         }
 
         changes
@@ -171,10 +167,6 @@ impl JJChange {
     pub fn is_working(&self) -> bool {
         self.beacon == '@'
     }
-}
-
-fn span_is_empty(span: &str) -> bool {
-    span.as_bytes().iter().all(|&v| v == b' ')
 }
 
 fn id_is_root(id: &str) -> bool {

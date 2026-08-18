@@ -79,6 +79,8 @@ log-files-diff = [
 log-diff = [
   { key = "k", desc = "diff scroll up" },
   { key = "j", desc = "diff scroll down" },
+  { key = "h", desc = "diff scroll left" },
+  { key = "l", desc = "diff scroll right" },
   { key = "<C-d>", desc = "diff scroll down 50%" },
   { key = "<C-u>", desc = "diff scroll up 50%" },
   { key = "<C-f>", desc = "diff page down" },

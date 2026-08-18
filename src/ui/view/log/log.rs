@@ -301,6 +301,11 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 .log_diff_state
                 .scroll_vertical(action, state.log_diff_view.height());
         }
+        LogMsg::ScrollHDiff(action) => {
+            state
+                .log_diff_state
+                .scroll_horizontal(action, state.log_diff_view.width());
+        }
         LogMsg::ScrollShow(action) => {
             state
                 .log_show_state
@@ -316,7 +321,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
 
             state
                 .log_files_state
-                .scroll_vertical(action, state.log_files_view.height());
+                .scroll_lines(action, state.log_files_view.height());
 
             if let Some(i) = state.log_files_state.selected()
                 && let Some(file) = state.log_files_view.lines.get(i).map(|v| {
@@ -570,7 +575,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 state
                     .log_modal_bookmark_list_state
                     .0
-                    .scroll_vertical(action, list.height() + 1);
+                    .scroll_lines(action, list.height() + 1);
             }
         }
         LogMsg::CreatingBookmark { key } => {
@@ -858,7 +863,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 state
                     .log_modal_tag_list_state
                     .0
-                    .scroll_vertical(action, list.height() + 1);
+                    .scroll_lines(action, list.height() + 1);
             }
         }
         LogMsg::CreatingTag { key } => {
@@ -910,7 +915,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             if let Some(v) = &state.log_modal_unsync {
                 state
                     .log_modal_unsync_state
-                    .scroll_vertical(action, v.height());
+                    .scroll_lines(action, v.height());
             }
         }
         LogMsg::Push => {
@@ -984,6 +989,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
 
             ctx.queue().push(HelpMsg::Page(page));
         }
+        LogMsg::Paste => (),
     }
 }
 

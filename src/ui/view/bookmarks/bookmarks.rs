@@ -90,7 +90,7 @@ pub async fn update(
             }
         }
         BookmarksMsg::ScrollTree(v) => {
-            state.bookmarks_state.scroll_vertical(v);
+            state.bookmarks_state.scroll_lines(v);
             if let Some((bookmark, remote)) = selected_bookmark(state) {
                 state.bookmarks_history_state.reset();
                 debounce_history(state, bookmark, remote);
@@ -238,7 +238,7 @@ pub async fn update(
             if let Some(v) = &state.bookmarks_modal_remotes {
                 state
                     .bookmarks_modal_remotes_state
-                    .scroll_vertical(action, v.remotes.len());
+                    .scroll_lines(action, v.remotes.len());
             }
         }
         BookmarksMsg::Help => {

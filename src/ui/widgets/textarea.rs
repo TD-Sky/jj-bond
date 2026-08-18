@@ -1,4 +1,7 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    any::type_name_of_val,
+    ops::{Deref, DerefMut},
+};
 
 use ratatui::{
     crossterm::event::KeyEvent,
@@ -6,11 +9,32 @@ use ratatui::{
 };
 use ratzgo::core::{Widget, *};
 
-#[derive(Debug)]
 pub struct TextArea<'a, Message> {
     state: &'a mut TextAreaState,
     activity: bool,
     on_key: OnKey<'a, Message>,
+    on_paste: Option<OnPaste<Message>>,
+}
+
+type OnPaste<Message> = Box<
+    dyn for<'s> FnOnce(&'s str, &'s mut ratatui_textarea::TextArea<'static>) -> Message + 'static,
+>;
+
+impl<'a, Message> std::fmt::Debug for TextArea<'a, Message>
+where
+    Message: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TextArea")
+            .field("state", &self.state)
+            .field("activity", &self.activity)
+            .field("on_key", &self.on_key)
+            .field(
+                "on_paste",
+                &format_args!("<closure of `{}`>", type_name_of_val(&self.on_paste)),
+            )
+            .finish()
+    }
 }
 
 impl<'a, Message> TextArea<'a, Message> {
@@ -19,6 +43,7 @@ impl<'a, Message> TextArea<'a, Message> {
             state,
             activity: false,
             on_key: Default::default(),
+            on_paste: None,
         }
     }
 
@@ -27,6 +52,14 @@ impl<'a, Message> TextArea<'a, Message> {
         F: FnOnce(&mut ratatui_textarea::TextArea<'static>),
     {
         f(&mut self.state.base);
+        self
+    }
+
+    pub fn on_paste<F>(mut self, f: F) -> Self
+    where
+        F: FnOnce(&str, &mut ratatui_textarea::TextArea<'static>) -> Message + 'static,
+    {
+        self.on_paste = Some(Box::new(f));
         self
     }
 }
@@ -49,6 +82,10 @@ where
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
         self.on_key.key(key)
+    }
+
+    fn handle_paste(&mut self, content: &str) -> Option<Message> {
+        self.on_paste.take().map(|f| f(content, self.state))
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {

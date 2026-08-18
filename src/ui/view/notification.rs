@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use ratatui::{crossterm::event::KeyCode, layout::Constraint};
+use ratatui::{crossterm::event::KeyCode, macros::constraint};
 use ratzgo::{core::*, widget::MountPoint};
 
 use crate::ui::{Message, NotifyMsg, widgets::Notification};
@@ -24,7 +24,7 @@ pub fn view<'a>(
                 event.text.clone(),
             )
             .on_key(|key| key.code == KeyCode::Esc, NotifyMsg::Confirm.into()),
-            |area| area.centered(Constraint::Ratio(1, 2), Constraint::Ratio(3, 5)),
+            |area| area.centered(constraint!(==1/2), constraint!(==3/5)),
         );
     }
 
