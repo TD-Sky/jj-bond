@@ -308,13 +308,13 @@ pub fn view<'a>(
                     if k.modifiers == KeyModifiers::SHIFT
                         && *log_layout == LogLayout::HISTORY_FILES =>
                 {
-                    LogMsg::ScrollShow(ScrollAction::Fixed(-1))
+                    LogMsg::ScrollShow(ScrollAction::Viewport(-25))
                 }
                 KeyCode::Char('J')
                     if k.modifiers == KeyModifiers::SHIFT
                         && *log_layout == LogLayout::HISTORY_FILES =>
                 {
-                    LogMsg::ScrollShow(ScrollAction::Fixed(1))
+                    LogMsg::ScrollShow(ScrollAction::Viewport(25))
                 }
                 KeyCode::Char('n') if let Some(change) = view.beacons().get(hover) => LogMsg::New {
                     parent: change.id.clone(),

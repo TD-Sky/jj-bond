@@ -131,10 +131,10 @@ pub fn view<'a>(
                 KeyCode::Char('l') => TagsMsg::TagOpen,
                 KeyCode::Char('h') => TagsMsg::TagClose,
                 KeyCode::Char('K') if k.modifiers == KeyModifiers::SHIFT => {
-                    TagsMsg::ScrollHistory(ScrollAction::Fixed(-1))
+                    TagsMsg::ScrollHistory(ScrollAction::Viewport(-25))
                 }
                 KeyCode::Char('J') if k.modifiers == KeyModifiers::SHIFT => {
-                    TagsMsg::ScrollHistory(ScrollAction::Fixed(1))
+                    TagsMsg::ScrollHistory(ScrollAction::Viewport(25))
                 }
                 KeyCode::Char('t') => TagsMsg::Track,
                 KeyCode::Char('u') => TagsMsg::Untrack,

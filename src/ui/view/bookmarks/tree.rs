@@ -115,10 +115,10 @@ pub fn view<'a>(
                 KeyCode::Char('l') => BookmarksMsg::BookmarkOpen,
                 KeyCode::Char('h') => BookmarksMsg::BookmarkClose,
                 KeyCode::Char('K') if k.modifiers == KeyModifiers::SHIFT => {
-                    BookmarksMsg::ScrollHistory(ScrollAction::Fixed(-1))
+                    BookmarksMsg::ScrollHistory(ScrollAction::Viewport(-25))
                 }
                 KeyCode::Char('J') if k.modifiers == KeyModifiers::SHIFT => {
-                    BookmarksMsg::ScrollHistory(ScrollAction::Fixed(1))
+                    BookmarksMsg::ScrollHistory(ScrollAction::Viewport(25))
                 }
                 KeyCode::Char('t') => BookmarksMsg::Track,
                 KeyCode::Char('u') => BookmarksMsg::Untrack,

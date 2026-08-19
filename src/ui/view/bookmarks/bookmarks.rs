@@ -99,7 +99,7 @@ pub async fn update(
         BookmarksMsg::ScrollHistory(v) => {
             state
                 .bookmarks_history_state
-                .scroll_vertical(&state.log_history, v);
+                .scroll_vertical(&state.bookmarks_history_view, v);
         }
         BookmarksMsg::BookmarkOpen => {
             let path = state.bookmarks_state.selected().to_vec();
