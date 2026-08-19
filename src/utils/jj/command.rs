@@ -639,7 +639,7 @@ impl JJHandle {
                 "squash",
                 "--editor",
                 "-f",
-                &format!("{start}::{end}"),
+                &format!("({start}::{end}) ~ {to}"),
                 "-t",
                 to,
             ]),

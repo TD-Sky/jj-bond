@@ -429,28 +429,12 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     _ => None,
                 },
                 Some(Yanking::Range {
-                    base: (start, end),
-                    ids,
-                }) => ids
-                    .lines()
-                    .find_map(|change_id| match change_id.split_once('/') {
-                        Some((change_id, change_offset))
-                            if let Some((short_id, divergent)) = id.split_once('/')
-                                && change_id.starts_with(short_id)
-                                && change_offset == divergent =>
-                        {
-                            Some(Squash::RangeTo {
-                                start: start.clone(),
-                                end: end.clone(),
-                                to: id.clone(),
-                            })
-                        }
-                        None if change_id.starts_with(id.as_str()) => Some(Squash::ToStart {
-                            start: start.clone(),
-                            end: end.clone(),
-                        }),
-                        _ => None,
-                    }),
+                    base: (start, end), ..
+                }) => Some(Squash::RangeTo {
+                    start: start.clone(),
+                    end: end.clone(),
+                    to: id,
+                }),
                 None if let Some((_, change)) = state.log_history.find_working() => {
                     Some(Squash::ToParent {
                         id: change.id.clone(),
