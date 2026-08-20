@@ -1,9 +1,12 @@
 use clap::Parser;
 
-const VERSION: &str = concat!(
+const VERSION: &str = constcat::concat!(
     env!("CARGO_PKG_VERSION"),
     " (",
-    env!("VERGEN_GIT_SHA"),
+    match option_env!("VERGEN_GIT_SHA") {
+        Some(s) => s,
+        None => "no-git",
+    },
     " ",
     env!("VERGEN_BUILD_DATE"),
     ")",

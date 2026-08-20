@@ -509,6 +509,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "constcat"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "136d3e02915a2cea4d74caa8681e2d44b1c3254bdbf17d11d41d587ff858832c"
+
+[[package]]
 name = "convert_case"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2203,6 +2209,7 @@ dependencies = [
  "bytestring",
  "clap",
  "compio",
+ "constcat",
  "dirs",
  "enumflags2",
  "eros",
@@ -2964,9 +2971,9 @@ dependencies = [
 
 [[package]]
 name = "ratzgo"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8853079013d0f875a6aee73652a514c716341c2a9dbbe33653f1827c736b1ee"
+checksum = "0841297cd6b99282c425db221ff025dba1e4a2ad748515c1b81060ab1437de0e"
 dependencies = [
  "compio-runtime",
  "crossterm",

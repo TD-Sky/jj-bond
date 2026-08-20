@@ -16,7 +16,7 @@ use crate::ui::{
 
 #[derive(Debug)]
 pub struct VState<'a> {
-    pub view: &'a Text<'static>,
+    pub view: &'a Text<'a>,
     pub state: &'a mut ListState,
     pub input: Option<&'a mut TextAreaState>,
 }

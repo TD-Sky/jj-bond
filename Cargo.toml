@@ -22,7 +22,7 @@ include = [
 [dependencies]
 thiserror = "2"
 ratatui = "0.30"
-ratzgo = "0.1.1"
+ratzgo = "0.1.2"
 compio = { version = "0.19", features = ["runtime", "process", "time"] }
 futures-util = "0.3"
 enumflags2 = "0.7.12"
@@ -42,6 +42,7 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "1.1.4+spec-1.1.0"
 eros = "0.7"
 clap = { version = "4.6", features = ["derive"] }
+constcat = "0.6"
 
 [build-dependencies]
 vergen-gix = { version = "10.0", features = ["build"] }
