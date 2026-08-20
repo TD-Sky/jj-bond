@@ -686,14 +686,9 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             state.log_modal_rebase_list = Some(view);
             state.log_modal_rebase_from = None;
             state.log_modal_rebase_list_state.1.select(None);
-            if state
-                .log_modal_rebase_list
-                .as_ref()
-                .is_some_and(|view| !view.lines.is_empty())
-            {
-                state.log_modal_rebase_list_state.0.reset();
-            } else {
-                state.log_modal_rebase_list_state.0.select(None);
+            match &state.log_modal_rebase_list {
+                Some(v) if !v.lines.is_empty() => state.log_modal_rebase_list_state.0.reset(),
+                _ => state.log_modal_rebase_list_state.0.select(None),
             }
         }
         LogMsg::RebaseListClose => {
@@ -703,9 +698,9 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             state.log_modal_rebase_from = None;
             state.log_modal_rebase_list_state.1.select(None);
         }
-        LogMsg::RebaseListSelect => {
-            if let Some(from) = state.log_modal_rebase_from.clone() {
-                let to = state.log_modal_rebase_list.as_ref().and_then(|view| {
+        LogMsg::RebaseListSelect => match state.log_modal_rebase_from.as_deref() {
+            Some(from) => {
+                let Some(to) = state.log_modal_rebase_list.as_ref().and_then(|view| {
                     state
                         .log_modal_rebase_list_state
                         .1
@@ -713,66 +708,63 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                         .and_then(|i| {
                             view.lines
                                 .iter()
-                                .filter(|line| line.spans[0].content != from.as_str())
+                                .filter(|line| line.spans[0].content != from)
                                 .nth(i)
                                 .map(|v| v.spans[0].content.as_ref())
                         })
-                });
-                let Some(to) = to else {
+                }) else {
                     return;
                 };
 
                 state.log_rebase = Some(Rebase::One {
-                    from,
+                    from: from.into(),
                     to: to.into(),
                 });
                 state.log_rebase_clear_yank = false;
                 close_rebase_list(state);
-            } else {
-                let from = state.log_modal_rebase_list.as_ref().and_then(|view| {
+            }
+            None => {
+                let Some(from) = state.log_modal_rebase_list.as_ref().and_then(|view| {
                     state
                         .log_modal_rebase_list_state
                         .0
                         .selected()
                         .and_then(|i| view.lines.get(i))
                         .map(|v| v.spans[0].content.as_ref())
-                });
-                let Some(from) = from else {
+                }) else {
                     return;
                 };
 
                 state.log_modal_rebase_from = Some(from.into());
-                if state
-                    .log_modal_rebase_list
-                    .as_ref()
-                    .is_some_and(|view| view.lines.len() > 1)
-                {
-                    state.log_modal_rebase_list_state.1.reset();
-                } else {
-                    state.log_modal_rebase_list_state.1.select(None);
+                match &state.log_modal_rebase_list {
+                    Some(v) if v.lines.len() > 1 => state.log_modal_rebase_list_state.1.reset(),
+                    _ => state.log_modal_rebase_list_state.1.select(None),
                 }
             }
-        }
+        },
         LogMsg::RebaseListScroll(action) => {
             let Some(view) = state.log_modal_rebase_list.as_ref() else {
                 return;
             };
 
-            if let Some(from) = state.log_modal_rebase_from.as_deref() {
-                let height = view
-                    .lines
-                    .iter()
-                    .filter(|line| line.spans[0].content != from)
-                    .count();
-                state
-                    .log_modal_rebase_list_state
-                    .1
-                    .scroll_lines(action, height);
-            } else {
-                state
-                    .log_modal_rebase_list_state
-                    .0
-                    .scroll_lines(action, view.lines.len());
+            match state.log_modal_rebase_from.as_deref() {
+                Some(from) => {
+                    let height = view
+                        .lines
+                        .iter()
+                        .filter(|line| line.spans[0].content != from)
+                        .count();
+                    state
+                        .log_modal_rebase_list_state
+                        .1
+                        .scroll_lines(action, height);
+                }
+                None => {
+                    state
+                        .log_modal_rebase_list_state
+                        .0
+                        .scroll_lines(action, view.lines.len());
+                }
             }
         }
         LogMsg::Rebase { id } => {
@@ -1098,13 +1090,6 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
     }
 }
 
-fn close_rebase_list(state: &mut MainState) {
-    state.log_modal_rebase_list = None;
-    state.log_modal_rebase_from = None;
-    state.log_modal_rebase_list_state.0.select(None);
-    state.log_modal_rebase_list_state.1.select(None);
-}
-
 pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) {
     let jj_handle = state.jj_handle.clone();
     let mode = state.log_mode.clone();
@@ -1139,4 +1124,11 @@ fn debounce_diff(state: &mut MainState, id: SmolStr, status_file: SmolStr) {
                 .await
                 .map(|text| LogMsg::UpdateDiff { text, version })
         });
+}
+
+fn close_rebase_list(state: &mut MainState) {
+    state.log_modal_rebase_list = None;
+    state.log_modal_rebase_from = None;
+    state.log_modal_rebase_list_state.0.select(None);
+    state.log_modal_rebase_list_state.1.select(None);
 }
