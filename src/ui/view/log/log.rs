@@ -1,5 +1,3 @@
-use std::mem;
-
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
@@ -673,6 +671,10 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             state.log_history_state.unyank();
         }
         LogMsg::RebaseListOpen => {
+            if state.log_history_state.yanking().is_some() {
+                return;
+            }
+
             let s = match state.jj_handle.bookmarks().await {
                 Ok(s) => s,
                 Err(e) => {
@@ -722,7 +724,6 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     from: from.into(),
                     to: to.into(),
                 });
-                state.log_rebase_clear_yank = false;
                 close_rebase_list(state);
             }
             None => {
@@ -814,16 +815,12 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 }
                 None => None,
             };
-            state.log_rebase_clear_yank = state.log_rebase.is_some();
         }
         LogMsg::RebaseConfirm(yes) => {
-            let clear_yank = mem::take(&mut state.log_rebase_clear_yank);
             if let Some(v) = state.log_rebase.take()
                 && yes
             {
-                if clear_yank {
-                    state.log_history_state.unyank();
-                }
+                state.log_history_state.unyank();
 
                 match state.jj_handle.rebase(&v).await {
                     Ok(_) => {

@@ -55,7 +55,6 @@ pub struct MainState {
     pub log_abandon: Option<Abandon>,
     pub log_squash: Option<Squash>,
     pub log_rebase: Option<Rebase>,
-    pub log_rebase_clear_yank: bool,
     pub log_split: Option<Split>,
     pub log_duplicate: Option<Duplicate>,
     pub log_reloc: LogRelocate,
