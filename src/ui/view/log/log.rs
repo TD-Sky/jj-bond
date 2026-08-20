@@ -1,3 +1,5 @@
+use std::mem;
+
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
@@ -716,7 +718,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     return;
                 };
 
-                state.log_rebase = Some(Rebase::One {
+                state.log_rebase = Some(Rebase::Branch {
                     from: from.into(),
                     to: to.into(),
                 });
@@ -815,7 +817,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             state.log_rebase_clear_yank = state.log_rebase.is_some();
         }
         LogMsg::RebaseConfirm(yes) => {
-            let clear_yank = std::mem::take(&mut state.log_rebase_clear_yank);
+            let clear_yank = mem::take(&mut state.log_rebase_clear_yank);
             if let Some(v) = state.log_rebase.take()
                 && yes
             {

@@ -659,6 +659,7 @@ impl JJHandle {
             Rebase::Range { start, end, to } => {
                 cmd.args(["rebase", "-r", &format!("{start}::{end}"), "--onto", to])
             }
+            Rebase::Branch { from, to } => cmd.args(["rebase", "--branch", from, "--onto", to]),
         };
 
         let output = cmd.output().await?;
@@ -840,6 +841,10 @@ pub enum Rebase {
         end: SmolStr,
         to: SmolStr,
     },
+    Branch {
+        from: SmolStr,
+        to: SmolStr,
+    },
 }
 
 impl Rebase {
@@ -847,6 +852,9 @@ impl Rebase {
         match self {
             Rebase::One { from, to } => format!("rebase `{from}` to `{to}`"),
             Rebase::Range { start, end, to } => format!("rebase `{start}::{end}` to `{to}`"),
+            Rebase::Branch { from, to } => {
+                format!("rebase branch `{from}` to bookmark `{to}`")
+            }
         }
     }
 
@@ -854,6 +862,7 @@ impl Rebase {
         match self {
             Rebase::One { from, .. } => from,
             Rebase::Range { end, .. } => end,
+            Rebase::Branch { from, .. } => from,
         }
     }
 }
