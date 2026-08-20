@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-08-20
+
+### Bug Fixes
+
+- *(no category)* Optional VERGEN_GIT_SHA
+
+- *(no category)* Squash from range to target
+
+
+### Features
+
+- *(no category)* Rebase branch (#10)
+
+- *(no category)* Increment step length for preview scroll
+
+
 ## [0.1.4] - 2026-08-18
 
 ### Bug Fixes

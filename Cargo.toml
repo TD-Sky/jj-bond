@@ -1,6 +1,6 @@
 [package]
 name = "jj-bond"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 description = "jujutsu TUI"
 documentation = "https://github.com/TD-Sky/jj-bond"
