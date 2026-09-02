@@ -772,47 +772,20 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         }
         LogMsg::Rebase { id } => {
             state.log_rebase = match state.log_history_state.yanking() {
-                Some(Yanking::One { id: from }) => match from.split_once('/') {
-                    Some((change_id, change_offset))
-                        if let Some((short_id, divergent)) = id.split_once('/')
-                            && (!change_id.starts_with(short_id) || change_offset != divergent) =>
-                    {
-                        Some(Rebase::One {
-                            from: from.clone(),
-                            to: id,
-                        })
-                    }
-                    None if !from.starts_with(id.as_str()) => Some(Rebase::One {
+                Some(Yanking::One { id: from }) => {
+                    can_rebase_onto(from, &id).then(|| Rebase::One {
                         from: from.clone(),
                         to: id,
-                    }),
-                    _ => None,
-                },
+                    })
+                }
                 Some(Yanking::Range {
                     base: (start, end),
                     ids,
-                }) => {
-                    match ids
-                        .lines()
-                        .all(|change_id| match change_id.split_once('/') {
-                            Some((change_id, change_offset))
-                                if let Some((short_id, divergent)) = id.split_once('/')
-                                    && (!change_id.starts_with(short_id)
-                                        || change_offset != divergent) =>
-                            {
-                                true
-                            }
-                            None if !change_id.starts_with(id.as_str()) => true,
-                            _ => false,
-                        }) {
-                        true => Some(Rebase::Range {
-                            start: start.clone(),
-                            end: end.clone(),
-                            to: id.clone(),
-                        }),
-                        false => None,
-                    }
-                }
+                }) => can_rebase_onto(ids, &id).then(|| Rebase::Range {
+                    start: start.clone(),
+                    end: end.clone(),
+                    to: id.clone(),
+                }),
                 None => None,
             };
         }
@@ -1065,6 +1038,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 || state.log_modal_redo_state
             {
                 "confirm-modal"
+            } else if state.log_modal_rebase_list.is_some() {
+                "log-rebase-list"
             } else if state.log_modal_bookmark_list.is_some() {
                 "log-bookmark-list"
             } else if state.log_modal_tag_list.is_some() {
@@ -1130,4 +1105,64 @@ fn close_rebase_list(state: &mut MainState) {
     state.log_modal_rebase_from = None;
     state.log_modal_rebase_list_state.0.select(None);
     state.log_modal_rebase_list_state.1.select(None);
+}
+
+fn can_rebase_onto(revisions: &str, target: &str) -> bool {
+    revisions
+        .lines()
+        .all(|revision| !revision_eq(revision, target))
+}
+
+fn revision_eq(lhs: &str, rhs: &str) -> bool {
+    match (lhs.split_once('/'), rhs.split_once('/')) {
+        (Some((lhs_id, lhs_offset)), Some((rhs_id, rhs_offset))) => {
+            (lhs_id.starts_with(rhs_id) || rhs_id.starts_with(lhs_id)) && lhs_offset == rhs_offset
+        }
+        (None, None) => lhs.starts_with(rhs) || rhs.starts_with(lhs),
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{can_rebase_onto, revision_eq};
+
+    #[test]
+    fn compares_regular_revisions_by_change_id_prefix() {
+        assert!(revision_eq("abcdefghijkl", "abcdefgh"));
+        assert!(!revision_eq("abcdefghijkl", "xyzuvw"));
+    }
+
+    #[test]
+    fn compares_divergent_revisions_by_change_id_and_offset() {
+        assert!(revision_eq("abcdefghijkl/0", "abcdefgh/0"));
+        assert!(!revision_eq("abcdefghijkl/0", "abcdefgh/1"));
+        assert!(!revision_eq("abcdefghijkl/0", "xyzuvw/0"));
+    }
+
+    #[test]
+    fn divergent_and_regular_revisions_are_different() {
+        assert!(!revision_eq("abcdefghijkl/0", "xyzuvw"));
+        assert!(!revision_eq("abcdefghijkl", "xyzuvw/0"));
+    }
+
+    #[test]
+    fn allows_rebasing_divergent_revision_onto_regular_revision() {
+        assert!(can_rebase_onto("abcdefghijkl/0", "xyzuvw"));
+    }
+
+    #[test]
+    fn rejects_rebasing_onto_the_same_divergent_revision() {
+        assert!(!can_rebase_onto("abcdefghijkl/0", "abcdefgh/0"));
+        assert!(can_rebase_onto("abcdefghijkl/0", "abcdefgh/1"));
+    }
+
+    #[test]
+    fn rejects_range_containing_the_divergent_target_revision() {
+        let revisions = "abcdefghijkl/0\nxyzuvwxyzuvw\n";
+
+        assert!(!can_rebase_onto(revisions, "abcdefgh/0"));
+        assert!(can_rebase_onto(revisions, "abcdefgh/1"));
+        assert!(can_rebase_onto(revisions, "mnopqrst"));
+    }
 }

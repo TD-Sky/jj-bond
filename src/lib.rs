@@ -68,6 +68,7 @@ pub mod ui {
     pub use view::root;
 }
 pub mod utils {
+    mod alloc;
     pub mod jj {
         mod command;
         mod handle;

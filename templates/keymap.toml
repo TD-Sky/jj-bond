@@ -89,6 +89,18 @@ log-diff = [
   { key = "?", desc = "help" }
 ]
 
+log-rebase-list = [
+  { key = "k", desc = "up" },
+  { key = "j", desc = "down" },
+  { key = "<C-d>", desc = "scroll down 50%" },
+  { key = "<C-u>", desc = "scroll up 50%" },
+  { key = "<C-f>", desc = "page down" },
+  { key = "<C-b>", desc = "page up" },
+  { key = "<Enter>", desc = "select source / destination" },
+  { key = "<Esc>", desc = "back to source / close list" },
+  { key = "?", desc = "help" }
+]
+
 log-tag-list = [
   { key = "k", desc = "up" },
   { key = "j", desc = "down" },
