@@ -1038,6 +1038,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 || state.log_modal_redo_state
             {
                 "confirm-modal"
+            } else if state.log_modal_rebase_list.is_some() {
+                "log-rebase-list"
             } else if state.log_modal_bookmark_list.is_some() {
                 "log-bookmark-list"
             } else if state.log_modal_tag_list.is_some() {
