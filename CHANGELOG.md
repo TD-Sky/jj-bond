@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-09-02
+
+### Bug Fixes
+
+- *(no category)* Rebase divergent revisions (#11)
+
+
+### Documentation
+
+- *(readme)* Display workflows status
+
+### Features
+
+- *(no category)* Mimalloc as allocator
+
+- *(no category)* Rebase list help
+
+
 ## [0.1.5] - 2026-08-20
 
 ### Bug Fixes
