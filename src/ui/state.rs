@@ -1,6 +1,10 @@
-use std::cell::OnceCell;
+use std::{
+    cell::{Cell, OnceCell},
+    rc::Rc,
+};
 
 use bytestring::ByteString;
+use ratatui::layout::Rect;
 use ratzgo::{
     event::UnsyncDebounce,
     widget::{ListState, MountPoint, ParagraphState},
@@ -44,13 +48,17 @@ pub struct MainState {
     pub log_focus: LogFocus,
     pub log_history: LogText,
     pub log_history_state: LogHistoryState,
+    pub log_history_area: Rc<Cell<Rect>>,
     pub log_show_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub log_show_state: ParagraphState,
     pub log_show_view: BoxText,
+    pub log_show_area: Rc<Cell<Rect>>,
     pub log_files_state: ListState,
+    pub log_files_area: Rc<Cell<Rect>>,
     pub log_files_view: BoxText,
     pub log_diff_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub log_diff_state: ParagraphState,
+    pub log_diff_area: Rc<Cell<Rect>>,
     pub log_diff_view: BoxText,
     pub log_abandon: Option<Abandon>,
     pub log_squash: Option<Squash>,
@@ -73,23 +81,28 @@ pub struct MainState {
     pub log_modal_unsync_state: ListState,
     pub bookmarks: TreeText,
     pub bookmarks_state: TreeState<ByteString>,
+    pub bookmarks_tree_area: Rc<Cell<Rect>>,
     pub bookmarks_history_view: LogText,
     pub bookmarks_history_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub bookmarks_history_state: LogHistoryState,
+    pub bookmarks_history_area: Rc<Cell<Rect>>,
     pub bookmarks_modal_delete: Option<ByteString>,
     pub bookmarks_modal_remotes: Option<BookmarkTrack>,
     pub bookmarks_modal_remotes_state: ListState,
     pub tags: TreeText,
     pub tags_state: TreeState<ByteString>,
+    pub tags_tree_area: Rc<Cell<Rect>>,
     pub tags_history_view: LogText,
     pub tags_history_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub tags_history_state: LogHistoryState,
+    pub tags_history_area: Rc<Cell<Rect>>,
     pub tags_modal_delete: Option<ByteString>,
     pub tags_modal_push: Option<TagPush>,
     pub tags_modal_remotes: Option<TagTrack>,
     pub tags_modal_remotes_state: ListState,
     pub op_view: BoxText,
     pub op_state: ParagraphState,
+    pub op_area: Rc<Cell<Rect>>,
 }
 
 impl MainState {

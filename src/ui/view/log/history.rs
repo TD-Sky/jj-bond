@@ -1,5 +1,8 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
+    layout::{Constraint, Rect},
     macros::constraint,
     style::{Modifier, Style},
     text::Text,
@@ -9,7 +12,7 @@ use ratzgo::{
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ListState, MountPoint, block, list},
+    widget::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
 };
 
 use crate::{
@@ -27,6 +30,7 @@ use crate::{
 #[derive(Debug)]
 pub struct VState<'a> {
     pub state: &'a mut LogHistoryState,
+    pub area: &'a Rc<Cell<Rect>>,
     pub view: &'a LogText,
     pub log_focus: &'a LogFocus,
     pub log_layout: &'a LogLayout,
@@ -54,6 +58,7 @@ pub struct VState<'a> {
 pub fn view<'a>(
     VState {
         state,
+        area,
         view,
         log_focus,
         log_layout,
@@ -79,6 +84,8 @@ pub fn view<'a>(
     }: VState<'a>,
 ) -> impl Into<Element<'a, LogMsg>> {
     let hover = state.hovered();
+    let offset = state.offset();
+    let height = view.text().height();
 
     if let Some(v) = modal_abandon {
         mount_point.mount(
@@ -254,6 +261,7 @@ pub fn view<'a>(
     let yanking = state.yanking().is_some();
 
     let inner = LogHistory::new(view, state)
+        .bind_area(area)
         .active(log_focus.is_history())
         .on_key_with(move |k| {
             let msg = match k.code {
@@ -365,4 +373,18 @@ pub fn view<'a>(
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
+        .widget_right_opt(
+            scrollbar(ScrollbarParams {
+                content_length: height,
+                viewport: Area::Ref(area.clone()),
+                position: offset,
+            }),
+            {
+                let viewport = area.clone();
+                move |area| {
+                    (height > viewport.get().height as usize)
+                        .then(|| area.centered_vertically(Constraint::Percentage(90)))
+                }
+            },
+        )
 }

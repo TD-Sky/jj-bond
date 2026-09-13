@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cell::Cell, cmp::Ordering, rc::Rc};
 
 use ratatui::{
     crossterm::event::KeyEvent,
@@ -47,11 +47,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.state.area
+        self.state.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.state.area = area;
+        self.state.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -129,7 +129,7 @@ pub struct LogHistoryState {
     scroll: (u16, u16),
     hover: usize,
     yanking: Option<Yanking>,
-    area: Rect,
+    area: Area,
 }
 
 #[derive(Debug)]
@@ -150,6 +150,11 @@ impl LogHistoryState {
 
     pub fn hover(&mut self, index: usize) {
         self.hover = index;
+    }
+
+    /// `y` offset for scroll
+    pub fn offset(&self) -> usize {
+        self.scroll.0 as usize
     }
 
     pub fn reset(&mut self) {
@@ -211,7 +216,7 @@ impl LogHistoryState {
     }
 
     pub fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     pub fn scroll_vertical<'a>(
@@ -229,7 +234,7 @@ impl LogHistoryState {
             ScrollAction::Viewport(n) => {
                 let beacon = log.beacons().get(self.hover)?;
 
-                let offset = (self.area.height as f32 * n as f32 * 0.01) as isize;
+                let offset = (self.area.get().height as f32 * n as f32 * 0.01) as isize;
                 let line = beacon.range_line.start.saturating_add_signed(offset);
                 let (i, change) = log.find_by_line(line)?;
 
@@ -245,7 +250,7 @@ impl LogHistoryState {
         self.scroll.0 = repos_y_anchored(
             self.scroll.0,
             log.text().height(),
-            self.area.height,
+            self.area.get().height,
             4,
             change.range_line.start,
         );
@@ -260,6 +265,13 @@ where
 {
     fn from(widget: LogHistory<'a, Message>) -> Self {
         Element::new(widget)
+    }
+}
+
+impl<'a, Message> BindArea for LogHistory<'a, Message> {
+    fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
+        self.state.area = Area::Ref(area.clone());
+        self
     }
 }
 

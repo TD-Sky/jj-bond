@@ -1,18 +1,23 @@
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
+    layout::Constraint,
     widgets::Padding,
 };
 use ratzgo::{
     core::*,
     event::DefaultContext,
     scroll::ScrollAction,
-    widget::{BorderType, block, paragraph},
+    widget::{BorderType, ScrollbarParams, block, paragraph, scrollbar},
 };
 
 use crate::ui::{HelpMsg, MainState, Message, OpMsg, State};
 
 pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
+    let height = state.op_view.height();
+    let position = state.op_state.scroll.0 as usize;
+
     let inner = paragraph(state.op_view.get(), &mut state.op_state)
+        .bind_area(&state.op_area)
         .active(true)
         .on_key_with(|k| {
             let msg = match k.code {
@@ -40,6 +45,20 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
+        .widget_right_opt(
+            scrollbar(ScrollbarParams {
+                content_length: height,
+                viewport: Area::Ref(state.op_area.clone()),
+                position,
+            }),
+            {
+                let viewport = state.op_area.clone();
+                move |area| {
+                    (height > viewport.get().height as usize)
+                        .then(|| area.centered_vertically(Constraint::Percentage(90)))
+                }
+            },
+        )
         .into()
 }
 

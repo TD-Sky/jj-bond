@@ -26,6 +26,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, BookmarksMsg> {
             tree::view(tree::VState {
                 view: &state.bookmarks,
                 state: &mut state.bookmarks_state,
+                area: &state.bookmarks_tree_area,
                 mount_point: &state.mount_point,
                 modal_delete: state.bookmarks_modal_delete.as_ref(),
                 modal_remotes: state
@@ -36,6 +37,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, BookmarksMsg> {
             history::view(history::VState {
                 view: &state.bookmarks_history_view,
                 state: &mut state.bookmarks_history_state,
+                area: &state.bookmarks_history_area,
             })
         ]
     }

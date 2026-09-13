@@ -1,6 +1,9 @@
+use std::{cell::Cell, rc::Rc};
+
 use bytestring::ByteString;
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
+    layout::{Constraint, Rect},
     style::{Modifier, Style},
     widgets::Padding,
 };
@@ -8,7 +11,7 @@ use ratzgo::{
     core::*,
     scroll::ScrollAction,
     text::{Line, Text},
-    widget::{BorderType, ListState, MountPoint, block, list},
+    widget::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
 };
 use smol_str::SmolStr;
 
@@ -24,6 +27,7 @@ use crate::{
 pub struct VState<'a> {
     pub state: &'a mut TreeState<ByteString>,
     pub view: &'a TreeText,
+    pub area: &'a Rc<Cell<Rect>>,
     pub mount_point: &'a MountPoint<Message>,
     pub modal_delete: Option<&'a str>,
     pub modal_push: Option<&'a TagPush>,
@@ -34,6 +38,7 @@ pub fn view<'a>(
     VState {
         state,
         view,
+        area,
         modal_delete,
         modal_push,
         mount_point,
@@ -109,7 +114,11 @@ pub fn view<'a>(
         );
     }
 
+    let height = state.flatten(view.get()).len();
+    let offset = state.get_offset();
+
     let inner = Tree::new(view.get(), state)
+        .bind_area(area)
         .active(true)
         .decorate(|v| v.highlight_style(Style::new().add_modifier(Modifier::REVERSED)))
         .on_key_with(|k| {
@@ -151,4 +160,18 @@ pub fn view<'a>(
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
+        .widget_right_opt(
+            scrollbar(ScrollbarParams {
+                content_length: height,
+                viewport: Area::Ref(area.clone()),
+                position: offset,
+            }),
+            {
+                let viewport = area.clone();
+                move |area| {
+                    (height > viewport.get().height as usize)
+                        .then(|| area.centered_vertically(Constraint::Percentage(90)))
+                }
+            },
+        )
 }

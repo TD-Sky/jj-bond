@@ -1,5 +1,8 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
+    layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
     text::Text,
 };
@@ -7,7 +10,7 @@ use ratzgo::{
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ListState, block, list},
+    widget::{BorderType, ListState, ScrollbarParams, block, list, scrollbar},
 };
 
 use crate::ui::{
@@ -18,6 +21,7 @@ use crate::ui::{
 #[derive(Debug)]
 pub struct VState<'a> {
     pub state: &'a mut ListState,
+    pub area: &'a Rc<Cell<Rect>>,
     pub log_focus: &'a LogFocus,
     pub view: Text<'a>,
     pub id: Option<&'a str>,
@@ -26,15 +30,18 @@ pub struct VState<'a> {
 pub fn view<'a>(
     VState {
         state,
+        area,
         log_focus,
         view,
         id,
     }: VState<'a>,
 ) -> impl Into<Element<'a, LogMsg>> {
-    state.selected_mut().get_or_insert(0);
+    let offset = state.offset();
+    let height = view.height();
 
     let inner = list(state)
         .items(view)
+        .bind_area(area)
         .active(log_focus.is_files())
         .decorate(|v| v.highlight_style(Style::new().add_modifier(Modifier::REVERSED)))
         .on_key(
@@ -75,5 +82,21 @@ pub fn view<'a>(
     if let Some(id) = id {
         v = v.title(Line::from(id).style(Style::default().fg(Color::Indexed(13))));
     }
-    v.bordered().border_type(BorderType::Rounded)
+
+    v.bordered()
+        .border_type(BorderType::Rounded)
+        .widget_right_opt(
+            scrollbar(ScrollbarParams {
+                content_length: height,
+                viewport: Area::Ref(area.clone()),
+                position: offset,
+            }),
+            {
+                let viewport = area.clone();
+                move |area| {
+                    (height > viewport.get().height as usize)
+                        .then(|| area.centered_vertically(Constraint::Percentage(90)))
+                }
+            },
+        )
 }
