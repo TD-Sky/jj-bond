@@ -2203,7 +2203,7 @@ dependencies = [
 
 [[package]]
 name = "jj-bond"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "ansi-to-tui",
  "bytestring",
