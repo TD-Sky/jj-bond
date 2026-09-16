@@ -1,7 +1,9 @@
 use std::{
+    cell::Cell,
     hash::Hash,
     mem,
     ops::{Deref, DerefMut},
+    rc::Rc,
 };
 
 use ratatui::{
@@ -54,11 +56,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.state.area
+        self.state.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.state.area = area;
+        self.state.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -70,7 +72,14 @@ where
             &mut self.base,
             tui_tree_widget::Tree::<I>::new(&[]).expect("default tree"),
         );
-        tree.render(self.state.area, buf, &mut self.state.base);
+        tree.render(self.state.area.get(), buf, &mut self.state.base);
+    }
+}
+
+impl<'a, I, Message> BindArea for Tree<'a, I, Message> {
+    fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
+        self.state.area = Area::Ref(area.clone());
+        self
     }
 }
 
@@ -99,7 +108,7 @@ where
 #[derive(Debug, Default)]
 pub struct TreeState<I> {
     base: tui_tree_widget::TreeState<I>,
-    pub area: Rect,
+    pub area: Area,
 }
 
 impl<I> Deref for TreeState<I> {
@@ -123,7 +132,7 @@ where
     pub fn scroll_lines(&mut self, action: ScrollAction) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,
-            ScrollAction::Viewport(n) => (self.area.height as f32 * n as f32 * 0.01) as i16,
+            ScrollAction::Viewport(n) => (self.area.get().height as f32 * n as f32 * 0.01) as i16,
         };
 
         self.base.select_relative(|v| match v {

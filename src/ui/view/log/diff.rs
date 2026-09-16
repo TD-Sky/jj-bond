@@ -1,5 +1,8 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
+    layout::{Constraint, Rect},
     style::{Color, Style},
     text::Text,
 };
@@ -7,7 +10,10 @@ use ratzgo::{
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ParagraphState, block, paragraph},
+    widget::{
+        Block, BorderType, Paragraph, ParagraphState, ScrollbarOrientation, ScrollbarParams, block,
+        paragraph, scrollbar,
+    },
 };
 
 use crate::ui::{
@@ -18,6 +24,7 @@ use crate::ui::{
 #[derive(Debug)]
 pub struct VState<'a> {
     pub state: &'a mut ParagraphState,
+    pub area: Option<&'a Rc<Cell<Rect>>>,
     pub log_focus: &'a LogFocus,
     pub view: Text<'a>,
     pub id: Option<&'a str>,
@@ -27,12 +34,54 @@ pub struct VState<'a> {
 pub fn view<'a>(
     VState {
         state,
+        area,
         log_focus,
         view,
         id,
         file,
     }: VState<'a>,
 ) -> impl Into<Element<'a, LogMsg>> {
+    let blocking: &dyn Fn(Paragraph<'_, _>) -> Block<'_, _> = match area {
+        Some(viewport) => {
+            let (h, w) = (view.height(), view.width());
+            let (y, x) = state.scroll;
+            &move |inner| {
+                block(inner.bind_area(viewport))
+                    .widget_right_opt(
+                        scrollbar(ScrollbarParams {
+                            content_length: h,
+                            viewport: Area::Ref(viewport.clone()),
+                            position: y as usize,
+                        }),
+                        {
+                            let viewport = viewport.clone();
+                            move |area| {
+                                (h > viewport.get().height as usize)
+                                    .then(|| area.centered_vertically(Constraint::Percentage(90)))
+                            }
+                        },
+                    )
+                    .widget_bottom_opt(
+                        scrollbar(ScrollbarParams {
+                            content_length: w,
+                            viewport: Area::Ref(viewport.clone()),
+                            position: x as usize,
+                        })
+                        .orientation(ScrollbarOrientation::HorizontalBottom)
+                        .decorate(|v| v.thumb_symbol("/")),
+                        {
+                            let viewport = viewport.clone();
+                            move |area| {
+                                (w > viewport.get().width as usize)
+                                    .then(|| area.centered_horizontally(Constraint::Percentage(50)))
+                            }
+                        },
+                    )
+            }
+        }
+        None => &|inner| block(inner),
+    };
+
     let inner = paragraph(view, state)
         .active(log_focus.is_diff())
         .on_key(
@@ -73,16 +122,18 @@ pub fn view<'a>(
         )
         .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help);
 
-    let mut v = block(inner);
+    let mut v = blocking(inner);
     if let Some(id) = id {
         v = v.title(Line::from(id).style(Style::default().fg(Color::Indexed(13))));
     }
     if let Some(file) = file {
-        v = v.title_bottom(
+        v = v.title_top(
             Line::from(file)
                 .right_aligned()
                 .style(Style::default().fg(Color::Indexed(14))),
         );
     }
-    v.bordered().border_type(BorderType::Rounded)
+    v = v.bordered().border_type(BorderType::Rounded);
+
+    v
 }

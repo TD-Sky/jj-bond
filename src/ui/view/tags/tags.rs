@@ -26,6 +26,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
             tree::view(tree::VState {
                 view: &state.tags,
                 state: &mut state.tags_state,
+                area: &state.tags_tree_area,
                 mount_point: &state.mount_point,
                 modal_delete: state.tags_modal_delete.as_deref(),
                 modal_push: state.tags_modal_push.as_ref(),
@@ -37,6 +38,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
             history::view(history::VState {
                 view: &state.tags_history_view,
                 state: &mut state.tags_history_state,
+                area: &state.tags_history_area,
             })
         ]
     }

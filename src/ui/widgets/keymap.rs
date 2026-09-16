@@ -1,15 +1,15 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{cell::Cell, collections::HashMap, rc::Rc, sync::LazyLock};
 
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
-    layout::Constraint,
+    layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
-    widgets::Cell,
+    widgets::Cell as TableCell,
 };
 use ratzgo::{
-    core::{Element, OnKeyBuilder},
+    core::{Area, BindArea, Element, OnKeyBuilder},
     scroll::ScrollAction,
-    widget::{BorderType, Row, TableState, block, table},
+    widget::{BorderType, Row, ScrollbarParams, TableState, block, scrollbar, table},
 };
 use serde::Deserialize;
 
@@ -27,7 +27,17 @@ pub fn keymap_at(page: &str) -> &[KeyMapItem] {
     &KEYMAP[page]
 }
 
-pub fn keymap<'a>(state: &'a mut TableState, page: &str) -> impl Into<Element<'a, HelpMsg>> {
+pub fn keymap<'a>(
+    state: &'a mut TableState,
+    page: &str,
+    area: &'a Rc<Cell<Rect>>,
+) -> impl Into<Element<'a, HelpMsg>> {
+    /// Header row plus its `bottom_margin(1)`
+    const HEADER_HEIGHT: usize = 2;
+
+    let height = keymap_at(page).len() + HEADER_HEIGHT;
+    let offset = state.offset();
+
     let inner = table(state)
         .header(
             Row::new(vec!["Key", "Description"])
@@ -41,12 +51,12 @@ pub fn keymap<'a>(state: &'a mut TableState, page: &str) -> impl Into<Element<'a
         .widths([Constraint::Length(16), Constraint::Min(10)])
         .rows(KEYMAP[page].iter().map(|KeyMapItem { key, desc }| {
             Row::new(vec![
-                Cell::from(*key).style(
+                TableCell::from(*key).style(
                     Style::default()
                         .fg(Color::Cyan)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Cell::from(*desc).style(Style::default().fg(Color::Gray)),
+                TableCell::from(*desc).style(Style::default().fg(Color::Gray)),
             ])
         }))
         .decorate(|v| {
@@ -80,7 +90,23 @@ pub fn keymap<'a>(state: &'a mut TableState, page: &str) -> impl Into<Element<'a
             Some(msg)
         });
 
-    block(inner).bordered().border_type(BorderType::Rounded)
+    block(inner.bind_area(area))
+        .bordered()
+        .border_type(BorderType::Rounded)
+        .widget_right_opt(
+            scrollbar(ScrollbarParams {
+                content_length: height,
+                viewport: Area::Ref(area.clone()),
+                position: offset,
+            }),
+            {
+                let viewport = area.clone();
+                move |area| {
+                    (height > viewport.get().height as usize)
+                        .then(|| area.centered_vertically(Constraint::Percentage(90)))
+                }
+            },
+        )
 }
 
 #[derive(Debug, Deserialize)]

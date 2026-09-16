@@ -25,6 +25,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
     if state.log_layout == LogLayout::HISTORY {
         history::view(history::VState {
             state: &mut state.log_history_state,
+            area: &state.log_history_area,
             view: &state.log_history,
             log_focus: &state.log_focus,
             log_layout: &state.log_layout,
@@ -61,6 +62,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
             [
                 history::view(history::VState {
                     state: &mut state.log_history_state,
+                    area: &state.log_history_area,
                     view: &state.log_history,
                     log_focus: &state.log_focus,
                     log_layout: &state.log_layout,
@@ -92,6 +94,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 }),
                 show::view(show::VState {
                     state: &mut state.log_show_state,
+                    area: &state.log_show_area,
                     view: state.log_show_view.get(),
                 }),
             ]
@@ -103,6 +106,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
             [
                 files::view(files::VState {
                     state: &mut state.log_files_state,
+                    area: &state.log_files_area,
                     log_focus: &state.log_focus,
                     view: state.log_files_view.get(),
                     id: state
@@ -113,6 +117,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 }),
                 diff::view(diff::VState {
                     state: &mut state.log_diff_state,
+                    area: None,
                     log_focus: &state.log_focus,
                     view: state.log_diff_view.get(),
                     id: None,
@@ -124,6 +129,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
     } else if state.log_layout == LogLayout::DIFF {
         diff::view(diff::VState {
             state: &mut state.log_diff_state,
+            area: Some(&state.log_diff_area),
             log_focus: &state.log_focus,
             view: state.log_diff_view.get(),
             id: state
