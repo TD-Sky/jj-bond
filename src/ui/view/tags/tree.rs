@@ -44,7 +44,7 @@ pub fn view<'a>(
         mount_point,
         modal_remotes,
     }: VState<'a>,
-) -> impl Into<Element<'a, TagsMsg>> {
+) -> impl Widget<TagsMsg> + 'a {
     if let Some(tag) = modal_delete {
         mount_point.mount(
             Modal::new(" Delete Tag ", format!("delete tag `{tag}` ?"))

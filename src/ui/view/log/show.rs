@@ -18,7 +18,7 @@ pub struct VState<'a> {
     pub view: Text<'a>,
 }
 
-pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Into<Element<'a, LogMsg>> {
+pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Widget<LogMsg> + 'a {
     let height = view.height();
     let position = state.scroll.0 as usize;
 

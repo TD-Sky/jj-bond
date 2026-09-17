@@ -7,7 +7,7 @@ use ratatui::{
     text::Text,
     widgets::{Block, Padding, Paragraph, Widget as _, Wrap},
 };
-use ratzgo::core::{Element, OnKey, OnKeyBuilder, Widget};
+use ratzgo::core::{OnKey, OnKeyBuilder, Widget};
 
 #[derive(Debug)]
 pub struct Notification<'a, Message> {
@@ -64,15 +64,6 @@ where
             .block(Block::bordered())
             .centered()
             .render(area_bottom, buf);
-    }
-}
-
-impl<'a, Message> From<Notification<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'static,
-{
-    fn from(widget: Notification<'a, Message>) -> Self {
-        Element::new(widget)
     }
 }
 

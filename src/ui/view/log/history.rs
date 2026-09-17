@@ -82,7 +82,7 @@ pub fn view<'a>(
         modal_redo,
         modal_unsync,
     }: VState<'a>,
-) -> impl Into<Element<'a, LogMsg>> {
+) -> impl Widget<LogMsg> + 'a {
     let hover = state.hovered();
     let offset = state.offset();
     let height = view.text().height();
@@ -124,7 +124,6 @@ pub fn view<'a>(
                 to_state,
                 from: modal_rebase_from,
             })
-            .into()
             .map(Into::into),
             |area| area.centered(constraint!(==50%), constraint!(==50%)),
         );

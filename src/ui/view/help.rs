@@ -26,14 +26,14 @@ pub fn view<'a>(
         area,
         mount_point,
     }: &'a mut State,
-) -> Element<'a, Message> {
+) -> impl Widget<Message> + 'a {
     if let Some(page) = page {
-        mount_point.mount(keymap(state, page, area).into().map(Into::into), |area| {
+        mount_point.mount(keymap(state, page, area).map(Into::into), |area| {
             area.centered(constraint!(==50%), constraint!(==70%))
         });
     }
 
-    mount_point.view().into()
+    mount_point.view()
 }
 
 pub fn update(state: &mut State, msg: HelpMsg) {

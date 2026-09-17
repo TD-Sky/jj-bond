@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-pub fn view<'a>(state: &'a mut MainState) -> Element<'a, BookmarksMsg> {
+pub fn view<'a>(state: &'a mut MainState) -> impl Widget<BookmarksMsg> + 'a {
     let css = constraints![==1/3, ==2/3];
 
     row! {
@@ -41,7 +41,6 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, BookmarksMsg> {
             })
         ]
     }
-    .into()
 }
 
 pub async fn update(

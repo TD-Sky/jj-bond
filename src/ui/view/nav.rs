@@ -1,5 +1,5 @@
 use ratzgo::{
-    core::Element,
+    core::Widget,
     event::DefaultContext,
     widget::{BorderType, block, tabs},
 };
@@ -15,7 +15,7 @@ pub enum Tab {
     Operations,
 }
 
-pub fn view(state: Tab) -> impl Into<Element<'static, NavMsg>> {
+pub fn view(state: Tab) -> impl Widget<NavMsg> + 'static {
     let inner =
         tabs!["Log [1]", "Bookmarks [2]", "Tags [3]", "Operations [4]"].select(state as usize);
     block(inner).bordered().border_type(BorderType::Rounded)

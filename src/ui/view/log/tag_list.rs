@@ -4,9 +4,9 @@ use ratatui::{
     prelude::*,
 };
 use ratzgo::{
-    core::*,
+    core::{Widget, *},
     scroll::ScrollAction,
-    widget::{BorderType, ListState, block, column, list},
+    widget::{Block, BorderType, ListState, column, list},
 };
 
 use crate::ui::{
@@ -21,8 +21,8 @@ pub struct VState<'a> {
     pub input: Option<&'a mut TextAreaState>,
 }
 
-pub fn view<'a>(VState { view, state, input }: VState<'a>) -> Element<'a, Message> {
-    let inner: Element<LogMsg> = match input {
+pub fn view<'a>(VState { view, state, input }: VState<'a>) -> impl Widget<Message> + 'a {
+    let inner: Box<dyn Widget<LogMsg> + 'a> = match input {
         Some(input) => {
             let input = TextArea::new(input)
                 .active(true)
@@ -38,7 +38,7 @@ pub fn view<'a>(VState { view, state, input }: VState<'a>) -> Element<'a, Messag
                     list(state).items(view.clone()),
                 ]
             ]
-            .into()
+            .boxed()
         }
         None => {
             let mut view = view.clone();
@@ -77,10 +77,12 @@ pub fn view<'a>(VState { view, state, input }: VState<'a>) -> Element<'a, Messag
                 .on_key(|k| k.code == KeyCode::Enter, LogMsg::TagListSelect)
                 .on_key(|k| k.code == KeyCode::Esc, LogMsg::TagListClose)
                 .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help)
-                .into()
+                .boxed()
         }
     };
-    let block = block(inner).bordered().border_type(BorderType::Rounded);
+    let block = Block::new(inner)
+        .bordered()
+        .border_type(BorderType::Rounded);
 
-    Element::from(block).map(Message::Log)
+    block.map(Message::Log)
 }

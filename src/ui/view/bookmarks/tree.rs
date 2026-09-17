@@ -42,7 +42,7 @@ pub fn view<'a>(
         modal_delete,
         modal_remotes,
     }: VState<'a>,
-) -> impl Into<Element<'a, BookmarksMsg>> {
+) -> impl Widget<BookmarksMsg> + 'a {
     if let Some(bookmark) = modal_delete {
         mount_point.mount(
             Modal::new(

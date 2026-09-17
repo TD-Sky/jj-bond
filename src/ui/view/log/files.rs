@@ -35,7 +35,7 @@ pub fn view<'a>(
         view,
         id,
     }: VState<'a>,
-) -> impl Into<Element<'a, LogMsg>> {
+) -> impl Widget<LogMsg> + 'a {
     let offset = state.offset();
     let height = view.height();
 
