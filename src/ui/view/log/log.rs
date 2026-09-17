@@ -1,7 +1,7 @@
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
-    core::Element,
+    core::{Widget, WidgetExt},
     event::{DefaultContext, YieldFg},
     widget::row,
 };
@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
+pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Widget<LogMsg> + 'a> {
     let css = state.log_layout.constraints();
 
     if state.log_layout == LogLayout::HISTORY {
@@ -55,7 +55,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 .as_ref()
                 .map(|v| (v, &mut state.log_modal_unsync_state)),
         })
-        .into()
+        .boxed()
     } else if state.log_layout == LogLayout::HISTORY_FILES {
         row! [
             css;
@@ -99,7 +99,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 }),
             ]
         ]
-        .into()
+        .boxed()
     } else if state.log_layout == LogLayout::FILES_DIFF {
         row! [
             css;
@@ -125,7 +125,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 }),
             ]
         ]
-        .into()
+        .boxed()
     } else if state.log_layout == LogLayout::DIFF {
         diff::view(diff::VState {
             state: &mut state.log_diff_state,
@@ -139,7 +139,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 .map(|v| v.id.as_str()),
             file: state.log_reloc.file(),
         })
-        .into()
+        .boxed()
     } else {
         unreachable!()
     }

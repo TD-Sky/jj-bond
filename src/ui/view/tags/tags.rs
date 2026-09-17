@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
+pub fn view<'a>(state: &'a mut MainState) -> impl Widget<TagsMsg> + 'a {
     let css = constraints![==1/3, ==2/3];
 
     row! {
@@ -42,7 +42,6 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, TagsMsg> {
             })
         ]
     }
-    .into()
 }
 
 pub async fn update(state: &mut MainState, msg: TagsMsg, ctx: &mut DefaultContext<Message, State>) {

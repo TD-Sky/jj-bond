@@ -24,7 +24,7 @@ pub struct VState<'a> {
     pub view: &'a LogText,
 }
 
-pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Into<Element<'a, BookmarksMsg>> {
+pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Widget<BookmarksMsg> + 'a {
     let offset = state.offset();
     let height = view.text().height();
 

@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Paragraph, Widget as _, Wrap},
 };
 use ratzgo::{
-    core::{Element, OnKey, OnKeyBuilder, Widget},
+    core::{OnKey, OnKeyBuilder, Widget},
     widget::Borders,
 };
 
@@ -74,15 +74,6 @@ where
         Line::from("(N)o").centered().render(area_bottom_right, buf);
 
         outer.render(self.area, buf);
-    }
-}
-
-impl<'a, Message> From<Modal<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'static,
-{
-    fn from(widget: Modal<'a, Message>) -> Self {
-        Element::new(widget)
     }
 }
 

@@ -1,5 +1,5 @@
 use ratzgo::{
-    core::Element,
+    core::Widget,
     text::Line,
     widget::{BorderType, Tabs, block},
 };
@@ -13,7 +13,7 @@ pub struct State {
     pub pushing: ThinCell<bool>,
 }
 
-pub fn view(State { fetching, pushing }: State) -> impl Into<Element<'static, Message>> {
+pub fn view(State { fetching, pushing }: State) -> impl Widget<Message> + 'static {
     let mut items = vec![Line::from("Help [?]"), Line::from("Quit [q]")];
 
     if *fetching.borrow() {

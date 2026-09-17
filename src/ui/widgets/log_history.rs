@@ -259,15 +259,6 @@ impl LogHistoryState {
     }
 }
 
-impl<'a, Message> From<LogHistory<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: LogHistory<'a, Message>) -> Self {
-        Element::new(widget)
-    }
-}
-
 impl<'a, Message> BindArea for LogHistory<'a, Message> {
     fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
         self.state.area = Area::Ref(area.clone());

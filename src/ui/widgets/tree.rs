@@ -95,16 +95,6 @@ impl<'a, I, Message> OnKeyBuilder<'a, Message> for Tree<'a, I, Message> {
     }
 }
 
-impl<'a, I, Message> From<Tree<'a, I, Message>> for Element<'a, Message>
-where
-    I: std::fmt::Debug + Clone + PartialEq + Eq + Hash,
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Tree<'a, I, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct TreeState<I> {
     base: tui_tree_widget::TreeState<I>,

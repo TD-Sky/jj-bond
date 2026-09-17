@@ -79,7 +79,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
     ctx.queue().push(Message::Refresh);
 }
 
-pub fn view(state: &mut State) -> Element<'_, Message> {
+pub fn view(state: &mut State) -> Box<dyn Widget<Message> + '_> {
     let hint_vstate = hint::State {
         fetching: state.main.log_fetching.clone(),
         pushing: state.main.log_pushing.clone(),
@@ -90,12 +90,12 @@ pub fn view(state: &mut State) -> Element<'_, Message> {
         column! [
             constraints![==3, ==100%, ==3];
             [
-                nav::view(state.main.nav_tab).into().map(Into::into),
+                nav::view(state.main.nav_tab).map(Into::into),
                 match state.main.nav_tab {
-                    Tab::Log => log::view(&mut state.main).map(Into::into),
-                    Tab::Bookmarks => bookmarks::view(&mut state.main).map(Into::into),
-                    Tab::Tags => tags::view(&mut state.main).map(Into::into),
-                    Tab::Operations => operations::view(&mut state.main).map(Into::into),
+                    Tab::Log => log::view(&mut state.main).map(Into::into).boxed(),
+                    Tab::Bookmarks => bookmarks::view(&mut state.main).map(Into::into).boxed(),
+                    Tab::Tags => tags::view(&mut state.main).map(Into::into).boxed(),
+                    Tab::Operations => operations::view(&mut state.main).map(Into::into).boxed(),
                 },
                 hint::view(hint_vstate)
             ]
@@ -124,7 +124,7 @@ pub fn view(state: &mut State) -> Element<'_, Message> {
         help::view(&mut state.help),
         notification::view(&state.notify),
     ]
-    .into()
+    .boxed()
 }
 
 pub async fn update(state: &mut State, msg: Message, ctx: &mut DefaultContext<Message, State>) {

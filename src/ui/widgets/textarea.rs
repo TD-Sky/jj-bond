@@ -105,15 +105,6 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for TextArea<'a, Message> {
     }
 }
 
-impl<'a, Message> From<TextArea<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: TextArea<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct TextAreaState {
     base: ratatui_textarea::TextArea<'static>,

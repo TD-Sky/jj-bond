@@ -40,7 +40,7 @@ pub fn view<'a>(
         id,
         file,
     }: VState<'a>,
-) -> impl Into<Element<'a, LogMsg>> {
+) -> impl Widget<LogMsg> + 'a {
     let blocking: &dyn Fn(Paragraph<'_, _>) -> Block<'_, _> = match area {
         Some(viewport) => {
             let (h, w) = (view.height(), view.width());

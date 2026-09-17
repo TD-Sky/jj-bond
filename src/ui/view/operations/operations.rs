@@ -12,7 +12,7 @@ use ratzgo::{
 
 use crate::ui::{HelpMsg, MainState, Message, OpMsg, State};
 
-pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
+pub fn view<'a>(state: &'a mut MainState) -> impl Widget<OpMsg> + 'a {
     let height = state.op_view.height();
     let position = state.op_state.scroll.0 as usize;
 
@@ -59,7 +59,6 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
                 }
             },
         )
-        .into()
 }
 
 pub fn update(state: &mut MainState, msg: OpMsg, ctx: &mut DefaultContext<Message, State>) {

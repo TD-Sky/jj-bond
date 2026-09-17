@@ -16,7 +16,7 @@ pub fn view<'a>(
         events,
         mount_point,
     }: &'a State,
-) -> impl Into<Element<'a, Message>> {
+) -> impl Widget<Message> + 'a {
     if let Some(event) = events.back() {
         mount_point.mount(
             Notification::new(
