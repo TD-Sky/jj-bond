@@ -47,6 +47,7 @@ impl<'a, Message> TextArea<'a, Message> {
         }
     }
 
+    #[expect(unused)]
     pub fn decorate<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut ratatui_textarea::TextArea<'static>),
