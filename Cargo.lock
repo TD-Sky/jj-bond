@@ -2991,8 +2991,6 @@ dependencies = [
 [[package]]
 name = "ratzgo"
 version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eff61ac7ad6934d48d62c4f71c050e7d746aa01480898deb702e8a6f042d9dfe"
 dependencies = [
  "compio-runtime",
  "crossterm",
