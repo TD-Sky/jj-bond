@@ -4,15 +4,15 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ScrollbarParams, block, paragraph, scrollbar},
     core::*,
     event::DefaultContext,
     scroll::ScrollAction,
-    widget::{BorderType, ScrollbarParams, block, paragraph, scrollbar},
 };
 
 use crate::ui::{HelpMsg, MainState, Message, OpMsg, State};
 
-pub fn view<'a>(state: &'a mut MainState) -> impl Widget<OpMsg> + 'a {
+pub fn view<'a>(state: &'a mut MainState) -> impl Component<OpMsg> + 'a {
     let height = state.op_view.height();
     let position = state.op_state.scroll.0 as usize;
 

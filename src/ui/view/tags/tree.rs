@@ -8,10 +8,10 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
     core::*,
     scroll::ScrollAction,
     text::{Line, Text},
-    widget::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
 };
 use smol_str::SmolStr;
 
@@ -44,7 +44,7 @@ pub fn view<'a>(
         mount_point,
         modal_remotes,
     }: VState<'a>,
-) -> impl Widget<TagsMsg> + 'a {
+) -> impl Component<TagsMsg> + 'a {
     if let Some(tag) = modal_delete {
         mount_point.mount(
             Modal::new(" Delete Tag ", format!("delete tag `{tag}` ?"))

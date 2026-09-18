@@ -5,7 +5,7 @@ use ratatui::{
     layout::Rect,
     prelude::Buffer,
     style::{Color, Modifier},
-    widgets::{Paragraph, Widget as _},
+    widgets::{Paragraph, Widget},
 };
 use ratzgo::{
     core::*,
@@ -38,7 +38,7 @@ impl<'a, Message> LogHistory<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for LogHistory<'a, Message>
+impl<'a, Message> Component<Message> for LogHistory<'a, Message>
 where
     Message: std::fmt::Debug,
 {

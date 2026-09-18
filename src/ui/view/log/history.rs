@@ -9,10 +9,10 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
 };
 
 use crate::{
@@ -82,7 +82,7 @@ pub fn view<'a>(
         modal_redo,
         modal_unsync,
     }: VState<'a>,
-) -> impl Widget<LogMsg> + 'a {
+) -> impl Component<LogMsg> + 'a {
     let hover = state.hovered();
     let offset = state.offset();
     let height = view.text().height();

@@ -4,9 +4,9 @@ use ratatui::{
     prelude::*,
 };
 use ratzgo::{
-    core::{Widget, *},
+    component::{Block, BorderType, ListState, column, list},
+    core::*,
     scroll::ScrollAction,
-    widget::{Block, BorderType, ListState, column, list},
 };
 
 use crate::ui::{
@@ -21,8 +21,8 @@ pub struct VState<'a> {
     pub input: Option<&'a mut TextAreaState>,
 }
 
-pub fn view<'a>(VState { view, state, input }: VState<'a>) -> impl Widget<Message> + 'a {
-    let inner: Box<dyn Widget<LogMsg> + 'a> = match input {
+pub fn view<'a>(VState { view, state, input }: VState<'a>) -> impl Component<Message> + 'a {
+    let inner: Box<dyn Component<LogMsg> + 'a> = match input {
         Some(input) => {
             let input = TextArea::new(input)
                 .active(true)

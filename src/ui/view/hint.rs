@@ -1,7 +1,7 @@
 use ratzgo::{
-    core::Widget,
+    component::{BorderType, Tabs, block},
+    core::Component,
     text::Line,
-    widget::{BorderType, Tabs, block},
 };
 use thin_cell::unsync::ThinCell;
 
@@ -13,7 +13,7 @@ pub struct State {
     pub pushing: ThinCell<bool>,
 }
 
-pub fn view(State { fetching, pushing }: State) -> impl Widget<Message> + 'static {
+pub fn view(State { fetching, pushing }: State) -> impl Component<Message> + 'static {
     let mut items = vec![Line::from("Help [?]"), Line::from("Quit [q]")];
 
     if *fetching.borrow() {

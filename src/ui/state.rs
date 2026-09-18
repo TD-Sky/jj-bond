@@ -6,8 +6,8 @@ use std::{
 use bytestring::ByteString;
 use ratatui::layout::Rect;
 use ratzgo::{
+    component::{ListState, MountPoint, ParagraphState},
     event::UnsyncDebounce,
-    widget::{ListState, MountPoint, ParagraphState},
 };
 use smol_str::SmolStr;
 use thin_cell::unsync::ThinCell;

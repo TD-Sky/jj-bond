@@ -5,8 +5,8 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ScrollbarParams, block, scrollbar},
     core::*,
-    widget::{BorderType, ScrollbarParams, block, scrollbar},
 };
 
 use crate::{
@@ -24,7 +24,7 @@ pub struct VState<'a> {
     pub view: &'a LogText,
 }
 
-pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Widget<BookmarksMsg> + 'a {
+pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<BookmarksMsg> + 'a {
     let offset = state.offset();
     let height = view.text().height();
 

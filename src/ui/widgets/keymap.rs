@@ -7,9 +7,9 @@ use ratatui::{
     widgets::Cell as TableCell,
 };
 use ratzgo::{
-    core::{Area, BindArea, OnKeyBuilder, Widget},
+    component::{BorderType, Row, ScrollbarParams, TableState, block, scrollbar, table},
+    core::{Area, BindArea, Component, OnKeyBuilder},
     scroll::ScrollAction,
-    widget::{BorderType, Row, ScrollbarParams, TableState, block, scrollbar, table},
 };
 use serde::Deserialize;
 
@@ -31,7 +31,7 @@ pub fn keymap<'a>(
     state: &'a mut TableState,
     page: &str,
     area: &'a Rc<Cell<Rect>>,
-) -> impl Widget<HelpMsg> + 'a {
+) -> impl Component<HelpMsg> + 'a {
     /// Header row plus its `bottom_margin(1)`
     const HEADER_HEIGHT: usize = 2;
 

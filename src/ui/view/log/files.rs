@@ -7,10 +7,10 @@ use ratatui::{
     text::Text,
 };
 use ratzgo::{
+    component::{BorderType, ListState, ScrollbarParams, block, list, scrollbar},
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ListState, ScrollbarParams, block, list, scrollbar},
 };
 
 use crate::ui::{
@@ -35,7 +35,7 @@ pub fn view<'a>(
         view,
         id,
     }: VState<'a>,
-) -> impl Widget<LogMsg> + 'a {
+) -> impl Component<LogMsg> + 'a {
     let offset = state.offset();
     let height = view.height();
 

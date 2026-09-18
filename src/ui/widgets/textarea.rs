@@ -3,11 +3,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use ratatui::{
-    crossterm::event::KeyEvent,
-    prelude::{Widget as _, *},
-};
-use ratzgo::core::{Widget, *};
+use ratatui::{crossterm::event::KeyEvent, prelude::*};
+use ratzgo::core::*;
 
 pub struct TextArea<'a, Message> {
     state: &'a mut TextAreaState,
@@ -65,7 +62,7 @@ impl<'a, Message> TextArea<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for TextArea<'a, Message>
+impl<'a, Message> Component<Message> for TextArea<'a, Message>
 where
     Message: std::fmt::Debug,
 {

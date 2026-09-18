@@ -6,14 +6,8 @@ use std::{
     rc::Rc,
 };
 
-use ratatui::{
-    crossterm::event::KeyEvent,
-    prelude::{StatefulWidget as _, *},
-};
-use ratzgo::{
-    core::{Widget, *},
-    scroll::ScrollAction,
-};
+use ratatui::{crossterm::event::KeyEvent, prelude::*};
+use ratzgo::{core::*, scroll::ScrollAction};
 use tui_tree_widget::TreeItem;
 
 #[derive(Debug)]
@@ -46,7 +40,7 @@ impl<'a, I, Message> Tree<'a, I, Message> {
     }
 }
 
-impl<'a, I, Message> Widget<Message> for Tree<'a, I, Message>
+impl<'a, I, Message> Component<Message> for Tree<'a, I, Message>
 where
     I: std::fmt::Debug + Clone + PartialEq + Eq + Hash,
     Message: std::fmt::Debug,
@@ -72,7 +66,7 @@ where
             &mut self.base,
             tui_tree_widget::Tree::<I>::new(&[]).expect("default tree"),
         );
-        tree.render(self.state.area.get(), buf, &mut self.state.base);
+        StatefulWidget::render(tree, self.state.area.get(), buf, &mut self.state.base);
     }
 }
 

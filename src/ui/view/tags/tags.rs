@@ -1,6 +1,6 @@
 use bytestring::ByteString;
 use ratatui::macros::constraints;
-use ratzgo::{core::*, event::DefaultContext, widget::row};
+use ratzgo::{component::row, core::*, event::DefaultContext};
 
 use crate::{
     ui::{
@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-pub fn view<'a>(state: &'a mut MainState) -> impl Widget<TagsMsg> + 'a {
+pub fn view<'a>(state: &'a mut MainState) -> impl Component<TagsMsg> + 'a {
     let css = constraints![==1/3, ==2/3];
 
     row! {
