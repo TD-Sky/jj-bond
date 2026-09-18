@@ -7,13 +7,13 @@ use ratatui::{
     text::Text,
 };
 use ratzgo::{
-    core::*,
-    scroll::ScrollAction,
-    text::Line,
-    widget::{
+    component::{
         Block, BorderType, Paragraph, ParagraphState, ScrollbarOrientation, ScrollbarParams, block,
         paragraph, scrollbar,
     },
+    core::*,
+    scroll::ScrollAction,
+    text::Line,
 };
 
 use crate::ui::{
@@ -40,7 +40,7 @@ pub fn view<'a>(
         id,
         file,
     }: VState<'a>,
-) -> impl Widget<LogMsg> + 'a {
+) -> impl Component<LogMsg> + 'a {
     let blocking: &dyn Fn(Paragraph<'_, _>) -> Block<'_, _> = match area {
         Some(viewport) => {
             let (h, w) = (view.height(), view.width());

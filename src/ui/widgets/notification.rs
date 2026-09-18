@@ -5,9 +5,9 @@ use ratatui::{
     macros::constraints,
     prelude::*,
     text::Text,
-    widgets::{Block, Padding, Paragraph, Widget as _, Wrap},
+    widgets::{Block, Padding, Paragraph, Wrap},
 };
-use ratzgo::core::{OnKey, OnKeyBuilder, Widget};
+use ratzgo::core::{Component, OnKey, OnKeyBuilder};
 
 #[derive(Debug)]
 pub struct Notification<'a, Message> {
@@ -28,7 +28,7 @@ impl<'a, Message> Notification<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Notification<'a, Message>
+impl<'a, Message> Component<Message> for Notification<'a, Message>
 where
     Message: std::fmt::Debug,
 {

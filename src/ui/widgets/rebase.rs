@@ -5,9 +5,9 @@ use ratatui::{
     text::{Line, Text},
 };
 use ratzgo::{
+    component::{BorderType, Borders, ListState, block, column, line, list, row},
     core::*,
     scroll::ScrollAction,
-    widget::{BorderType, Borders, ListState, block, column, line, list, row},
 };
 
 use crate::ui::LogMsg;
@@ -27,7 +27,7 @@ pub fn view<'a>(
         to_state,
         from,
     }: VState<'a>,
-) -> impl Widget<LogMsg> + 'a {
+) -> impl Component<LogMsg> + 'a {
     let mut from_view = view.clone();
     if let Some(selected) = from {
         for line in &mut from_view.lines {

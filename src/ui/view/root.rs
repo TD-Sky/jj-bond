@@ -3,9 +3,9 @@ use std::time::Duration;
 use futures_util::StreamExt;
 use ratatui::{crossterm::event::KeyCode, macros::constraints};
 use ratzgo::{
+    component::{column, stack},
     core::*,
     event::DefaultContext,
-    widget::{column, stack},
 };
 
 use crate::{
@@ -79,7 +79,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
     ctx.queue().push(Message::Refresh);
 }
 
-pub fn view(state: &mut State) -> Box<dyn Widget<Message> + '_> {
+pub fn view(state: &mut State) -> Box<dyn Component<Message> + '_> {
     let hint_vstate = hint::State {
         fetching: state.main.log_fetching.clone(),
         pushing: state.main.log_pushing.clone(),

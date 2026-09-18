@@ -5,11 +5,11 @@ use ratatui::{
     macros::{constraint, constraints},
     prelude::*,
     text::Text,
-    widgets::{Block, BorderType, Padding, Paragraph, Widget as _, Wrap},
+    widgets::{Block, BorderType, Padding, Paragraph, Wrap},
 };
 use ratzgo::{
-    core::{OnKey, OnKeyBuilder, Widget},
-    widget::Borders,
+    component::Borders,
+    core::{Component, OnKey, OnKeyBuilder},
 };
 
 #[derive(Debug)]
@@ -31,7 +31,7 @@ impl<'a, Message> Modal<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Modal<'a, Message>
+impl<'a, Message> Component<Message> for Modal<'a, Message>
 where
     Message: std::fmt::Debug,
 {

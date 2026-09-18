@@ -1,9 +1,9 @@
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
-    core::{Widget, WidgetExt},
+    component::row,
+    core::{Component, ComponentExt},
     event::{DefaultContext, YieldFg},
-    widget::row,
 };
 use smol_str::SmolStr;
 
@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Widget<LogMsg> + 'a> {
+pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
     let css = state.log_layout.constraints();
 
     if state.log_layout == LogLayout::HISTORY {

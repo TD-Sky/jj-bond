@@ -1,7 +1,7 @@
 use ratzgo::{
-    core::Widget,
+    component::{BorderType, block, tabs},
+    core::Component,
     event::DefaultContext,
-    widget::{BorderType, block, tabs},
 };
 
 use crate::ui::{MainState, Message, NavMsg, State};
@@ -15,7 +15,7 @@ pub enum Tab {
     Operations,
 }
 
-pub fn view(state: Tab) -> impl Widget<NavMsg> + 'static {
+pub fn view(state: Tab) -> impl Component<NavMsg> + 'static {
     let inner =
         tabs!["Log [1]", "Bookmarks [2]", "Tags [3]", "Operations [4]"].select(state as usize);
     block(inner).bordered().border_type(BorderType::Rounded)

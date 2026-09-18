@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use ratatui::{crossterm::event::KeyCode, macros::constraint};
-use ratzgo::{core::*, widget::MountPoint};
+use ratzgo::{component::MountPoint, core::*};
 
 use crate::ui::{Message, NotifyMsg, widgets::Notification};
 
@@ -16,7 +16,7 @@ pub fn view<'a>(
         events,
         mount_point,
     }: &'a State,
-) -> impl Widget<Message> + 'a {
+) -> impl Component<Message> + 'a {
     if let Some(event) = events.back() {
         mount_point.mount(
             Notification::new(

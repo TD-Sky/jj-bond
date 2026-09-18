@@ -2,8 +2,8 @@ use std::{cell::Cell, rc::Rc};
 
 use ratatui::{layout::Rect, macros::constraint};
 use ratzgo::{
+    component::{MountPoint, TableState},
     core::*,
-    widget::{MountPoint, TableState},
 };
 
 use crate::ui::{
@@ -26,7 +26,7 @@ pub fn view<'a>(
         area,
         mount_point,
     }: &'a mut State,
-) -> impl Widget<Message> + 'a {
+) -> impl Component<Message> + 'a {
     if let Some(page) = page {
         mount_point.mount(keymap(state, page, area).map(Into::into), |area| {
             area.centered(constraint!(==50%), constraint!(==70%))
