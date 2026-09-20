@@ -7,7 +7,10 @@ use std::{
 };
 
 use ratatui::{crossterm::event::KeyEvent, prelude::*};
-use ratzgo::{core::*, scroll::ScrollAction};
+use ratzgo::{
+    core::*,
+    scroll::{ScrollAction, ScrollPosition},
+};
 use tui_tree_widget::TreeItem;
 
 #[derive(Debug)]
@@ -67,6 +70,10 @@ where
             tui_tree_widget::Tree::<I>::new(&[]).expect("default tree"),
         );
         StatefulWidget::render(tree, self.state.area.get(), buf, &mut self.state.base);
+
+        // `tui-tree-widget` decides the offset that keeps the selection visible while rendering
+        let offset = self.state.base.get_offset();
+        self.state.position.set(offset);
     }
 }
 
@@ -93,6 +100,7 @@ impl<'a, I, Message> OnKeyBuilder<'a, Message> for Tree<'a, I, Message> {
 pub struct TreeState<I> {
     base: tui_tree_widget::TreeState<I>,
     pub area: Area,
+    pub position: ScrollPosition,
 }
 
 impl<I> Deref for TreeState<I> {
@@ -113,6 +121,30 @@ impl<I> TreeState<I>
 where
     I: Clone + PartialEq + Eq + Hash,
 {
+    /// Open every node with children of `items`.
+    pub fn open_all(&mut self, items: &[TreeItem<'_, I>]) {
+        self.base.close_all();
+
+        let mut path = vec![];
+        for item in items {
+            self.open_item(item, &mut path);
+        }
+    }
+
+    fn open_item(&mut self, item: &TreeItem<'_, I>, path: &mut Vec<I>) {
+        path.push(item.identifier().clone());
+
+        if !item.children().is_empty() {
+            self.base.open(path.clone());
+
+            for child in item.children() {
+                self.open_item(child, path);
+            }
+        }
+
+        path.pop();
+    }
+
     pub fn scroll_lines(&mut self, action: ScrollAction) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,

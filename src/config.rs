@@ -3,16 +3,22 @@ use std::fs;
 use eros::Context;
 use serde::{Deserialize, Serialize};
 
+use crate::ui::FilesView;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default = "Config::default_launch_fetch")]
     pub launch_fetch: bool,
+
+    #[serde(default = "Config::default_log_files_view")]
+    pub log_files_view: FilesView,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             launch_fetch: Self::default_launch_fetch(),
+            log_files_view: Self::default_log_files_view(),
         }
     }
 }
@@ -59,5 +65,9 @@ impl Config {
 impl Config {
     fn default_launch_fetch() -> bool {
         true
+    }
+
+    fn default_log_files_view() -> FilesView {
+        FilesView::Tree
     }
 }

@@ -7,7 +7,7 @@ use ratzgo::{
     component::{BorderType, ScrollbarParams, block, paragraph, scrollbar},
     core::*,
     event::DefaultContext,
-    scroll::ScrollAction,
+    scroll::{ScrollAction, ScrollPosition},
 };
 
 use crate::ui::{HelpMsg, MainState, Message, OpMsg, State};
@@ -49,7 +49,7 @@ pub fn view<'a>(state: &'a mut MainState) -> impl Component<OpMsg> + 'a {
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: Area::Ref(state.op_area.clone()),
-                position,
+                position: ScrollPosition::Literal(position),
             }),
             {
                 let viewport = state.op_area.clone();

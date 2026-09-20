@@ -11,7 +11,7 @@ use ratatui::{
 use ratzgo::{
     component::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
     core::*,
-    scroll::ScrollAction,
+    scroll::{ScrollAction, ScrollPosition},
     text::Line,
 };
 
@@ -376,7 +376,7 @@ pub fn view<'a>(
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: Area::Ref(area.clone()),
-                position: offset,
+                position: ScrollPosition::Literal(offset),
             }),
             {
                 let viewport = area.clone();

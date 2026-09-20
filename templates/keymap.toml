@@ -71,6 +71,9 @@ log-files-diff = [
   { key = "<C-u>", desc = "files scroll up 50%" },
   { key = "<C-f>", desc = "files page down" },
   { key = "<C-b>", desc = "files page up" },
+  { key = "<Tab>", desc = "switch list | tree" },
+  { key = "<h>", desc = "tree collapse" },
+  { key = "<l>", desc = "tree expand" },
   { key = "<Enter>", desc = "open diff" },
   { key = "<Esc>", desc = "back to history|show" },
   { key = "?", desc = "help" }

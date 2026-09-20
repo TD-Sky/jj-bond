@@ -12,7 +12,7 @@ use ratzgo::{
         paragraph, scrollbar,
     },
     core::*,
-    scroll::ScrollAction,
+    scroll::{ScrollAction, ScrollPosition},
     text::Line,
 };
 
@@ -51,7 +51,7 @@ pub fn view<'a>(
                         scrollbar(ScrollbarParams {
                             content_length: h,
                             viewport: Area::Ref(viewport.clone()),
-                            position: y as usize,
+                            position: ScrollPosition::Literal(y as usize),
                         }),
                         {
                             let viewport = viewport.clone();
@@ -65,7 +65,7 @@ pub fn view<'a>(
                         scrollbar(ScrollbarParams {
                             content_length: w,
                             viewport: Area::Ref(viewport.clone()),
-                            position: x as usize,
+                            position: ScrollPosition::Literal(x as usize),
                         })
                         .orientation(ScrollbarOrientation::HorizontalBottom)
                         .decorate(|v| v.thumb_symbol("/")),

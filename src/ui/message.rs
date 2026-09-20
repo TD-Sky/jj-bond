@@ -3,10 +3,13 @@ use ratzgo::scroll::ScrollAction;
 use smol_str::SmolStr;
 
 use crate::{
-    ui::view::{log::LogLayout, nav::Tab},
+    ui::{
+        FilesView,
+        view::{log::LogLayout, nav::Tab},
+    },
     utils::{
         jj::Split,
-        tui::{LogText, TreeText},
+        tui::{LogText, PathTree, TreeText},
     },
 };
 
@@ -34,9 +37,14 @@ pub enum NavMsg {
 pub enum LogMsg {
     UpdateHistory(LogText),
     UpdateShow { text: Vec<u8>, version: u32 },
-    UpdateFiles(Vec<u8>),
+    UpdateFilesList(Vec<u8>),
+    UpdateFilesTree { tree: PathTree, id: SmolStr },
     UpdateDiff { text: Vec<u8>, version: u32 },
     Layout(LogLayout),
+    FilesViewSelect(FilesView),
+    ScrollFilesTree(ScrollAction),
+    FilesTreeOpen,
+    FilesTreeClose,
     ScrollHistory(ScrollAction),
     ScrollDiff(ScrollAction),
     ScrollHDiff(ScrollAction),

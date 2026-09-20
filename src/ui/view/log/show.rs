@@ -7,6 +7,7 @@ use ratatui::{
 use ratzgo::{
     component::{BorderType, ParagraphState, ScrollbarParams, block, paragraph, scrollbar},
     core::*,
+    scroll::ScrollPosition,
 };
 
 use crate::ui::LogMsg;
@@ -31,7 +32,7 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<LogM
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: Area::Ref(area.clone()),
-                position,
+                position: ScrollPosition::Literal(position),
             }),
             {
                 let viewport = area.clone();

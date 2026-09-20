@@ -7,6 +7,7 @@ use ratatui::{
 use ratzgo::{
     component::{BorderType, ScrollbarParams, block, scrollbar},
     core::*,
+    scroll::ScrollPosition,
 };
 
 use crate::{
@@ -36,7 +37,7 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<Book
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: Area::Ref(area.clone()),
-                position: offset,
+                position: ScrollPosition::Literal(offset),
             }),
             {
                 let viewport = area.clone();

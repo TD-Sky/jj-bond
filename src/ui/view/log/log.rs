@@ -1,4 +1,7 @@
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::{
+    crossterm::event::{KeyCode, KeyModifiers},
+    text::Text,
+};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
     component::row,
@@ -9,13 +12,13 @@ use smol_str::SmolStr;
 
 use crate::{
     ui::{
-        HelpMsg, LogMsg, LogRelocate, MainState, Message, State,
+        FilesView, HelpMsg, LogMsg, LogRelocate, MainState, Message, State,
         view::log::{LogLayout, diff, files, history, show},
         widgets::{TextAreaState, Yanking},
     },
     utils::{
         jj::{Abandon, Duplicate, LogMode, Rebase, Squash},
-        tui::{BoxText, LogText},
+        tui::{BoxText, LogText, PathTree},
     },
 };
 
@@ -101,6 +104,15 @@ pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
         ]
         .boxed()
     } else if state.log_layout == LogLayout::FILES_DIFF {
+        // the tree can select a directory, which has no diff of its own: blank the preview rather
+        // than showing the diff of a file that is not the selected node
+        let directory = state.log_files_view == FilesView::Tree
+            && state
+                .log_files_tree_state
+                .selected()
+                .last()
+                .is_some_and(|path| state.log_files_tree_view.status_file(path).is_none());
+
         row! [
             css;
             [
@@ -108,7 +120,10 @@ pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
                     state: &mut state.log_files_state,
                     area: &state.log_files_area,
                     log_focus: &state.log_focus,
-                    view: state.log_files_view.get(),
+                    view: state.log_files_list_view.get(),
+                    tab: state.log_files_view,
+                    tree_view: &state.log_files_tree_view,
+                    tree_state: &mut state.log_files_tree_state,
                     id: state
                         .log_history
                         .beacons()
@@ -119,7 +134,11 @@ pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
                     state: &mut state.log_diff_state,
                     area: None,
                     log_focus: &state.log_focus,
-                    view: state.log_diff_view.get(),
+                    view: if directory {
+                        Text::default()
+                    } else {
+                        state.log_diff_view.get()
+                    },
                     id: None,
                     file: None,
                 }),
@@ -211,9 +230,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             if state.log_layout == LogLayout::HISTORY_FILES {
                 debounce_show(state, id);
             } else if state.log_layout == LogLayout::FILES_DIFF {
-                let jj = state.jj_handle.clone();
-                ctx.queue()
-                    .spawn_try(async move { jj.diff_sum(&id).await.map(LogMsg::UpdateFiles) });
+                spawn_files_list(state, ctx, id.clone());
+                debounce_files_tree(state, ctx, id);
             }
         }
         LogMsg::ScrollHistory(action) => {
@@ -254,52 +272,94 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     state.log_files_state.select_first();
                 } else if state.log_layout == LogLayout::FILES_DIFF {
                     let change_id = change.id.clone();
-                    let jj = state.jj_handle.clone();
-                    ctx.queue().spawn_try(async move {
-                        jj.diff_sum(&change_id).await.map(LogMsg::UpdateFiles)
-                    });
+                    spawn_files_list(state, ctx, change_id.clone());
+                    debounce_files_tree(state, ctx, change_id);
                 }
             }
         }
-        LogMsg::UpdateFiles(s) => {
-            let LogRelocate::Concrete {
-                id,
-                file: file_reloc,
-            } = &mut state.log_reloc
-            else {
+        LogMsg::FilesViewSelect(view) => {
+            if state.log_files_view == view {
+                return;
+            }
+
+            state.log_files_view = view;
+
+            // the tree is only fetched when it is actually shown
+            if let LogRelocate::Concrete { id, .. } = &state.log_reloc {
+                let id = id.clone();
+                debounce_files_tree(state, ctx, id);
+            }
+
+            // list and tree select different things, so an already fetched tree takes over the
+            // preview right away (a tree that still has to be fetched does it on arrival)
+            if view == FilesView::Tree
+                && let LogRelocate::Concrete { id, .. } = &state.log_reloc
+                && state.log_files_tree_id.as_ref() == Some(id)
+            {
+                sync_files_tree_diff(state);
+            }
+
+            // the list always previews a file, so switching to it picks up the selected file again
+            if view == FilesView::List {
+                sync_files_list_diff(state);
+            }
+        }
+        LogMsg::UpdateFilesTree { tree, id } => {
+            let LogRelocate::Concrete { id: relocate, .. } = &state.log_reloc else {
                 return;
             };
 
-            state.log_files_view = s.into();
-
-            if let Some(file) = file_reloc
-                && let Some(i) = state
-                    .log_files_view
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, line)| {
-                        line.iter()
-                            .any(|span| span.content == file.as_str())
-                            .then_some(i)
-                    })
-            {
-                state.log_files_state.select(Some(i));
-            } else {
-                state.log_files_state.reset();
-                *file_reloc = state
-                    .log_files_view
-                    .lines
-                    .first()
-                    .and_then(|v| v.spans.first().map(|v| v.content.as_ref().into()));
-                state.log_diff_state.reset();
+            // a tree fetched for a change that is not shown anymore is stale
+            if relocate != &id {
+                return;
             }
 
-            let diff = file_reloc.as_ref().map(|file| (id.clone(), file.clone()));
-            if let Some((id, file)) = diff {
-                debounce_diff(state, id, file);
-            } else {
-                state.log_diff_debounce_mut().cancel();
-                state.log_diff_view = Default::default();
+            state.log_files_tree_state.open_all(tree.get());
+
+            // keep the selection of the previous tree when that node still exists
+            let selected = state.log_files_tree_state.selected().to_vec();
+            let visible = state.log_files_tree_state.flatten(tree.get());
+            if (selected.is_empty() || !visible.iter().any(|v| v.identifier == selected))
+                && let Some(first) = tree.get().first()
+            {
+                state
+                    .log_files_tree_state
+                    .select(vec![first.identifier().clone()]);
+            }
+
+            state.log_files_tree_view = tree;
+            state.log_files_tree_id = Some(id);
+
+            sync_files_tree_diff(state);
+        }
+        LogMsg::ScrollFilesTree(action) => {
+            state.log_files_tree_state.scroll_lines(action);
+            sync_files_tree_diff(state);
+        }
+        LogMsg::FilesTreeOpen => {
+            state.log_files_tree_state.key_right();
+            sync_files_tree_diff(state);
+        }
+        LogMsg::FilesTreeClose => {
+            state.log_files_tree_state.key_left();
+            sync_files_tree_diff(state);
+        }
+        LogMsg::UpdateFilesList(s) => {
+            let LogRelocate::Concrete { id, .. } = &state.log_reloc else {
+                return;
+            };
+            let tree_id = id.clone();
+
+            state.log_files_list_view = s.into();
+            // the diff of the shown change changed, so a fetched tree is outdated
+            state.log_files_tree_id = None;
+
+            if state.log_files_view == FilesView::List {
+                sync_files_list_diff(state);
+            }
+
+            if state.log_files_view == FilesView::Tree {
+                debounce_files_tree(state, ctx, tree_id);
             }
         }
         LogMsg::UpdateDiff { text, version } => {
@@ -339,10 +399,10 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
 
             state
                 .log_files_state
-                .scroll_lines(action, state.log_files_view.height());
+                .scroll_lines(action, state.log_files_list_view.height());
 
             if let Some(i) = state.log_files_state.selected()
-                && let Some(file) = state.log_files_view.lines.get(i).map(|v| {
+                && let Some(file) = state.log_files_list_view.lines.get(i).map(|v| {
                     v.spans
                         .first()
                         .map(|v| v.content.as_ref())
@@ -1081,6 +1141,100 @@ pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) 
     });
 }
 
+fn spawn_files_list(state: &mut MainState, ctx: &mut DefaultContext<Message, State>, id: SmolStr) {
+    let jj = state.jj_handle.clone();
+    ctx.queue()
+        .spawn_try(async move { jj.diff_sum(&id).await.map(LogMsg::UpdateFilesList) });
+}
+
+/// Fetch the file tree of `id`, unless it is hidden or already loaded.
+fn debounce_files_tree(
+    state: &mut MainState,
+    ctx: &mut DefaultContext<Message, State>,
+    id: SmolStr,
+) {
+    if state.log_files_view != FilesView::Tree || state.log_files_tree_id.as_ref() == Some(&id) {
+        return;
+    }
+
+    let jj = state.jj_handle.clone();
+    ctx.queue().spawn_try(async move {
+        jj.diff_files(&id).await.map(|raw| LogMsg::UpdateFilesTree {
+            tree: PathTree::new(&raw),
+            id,
+        })
+    });
+}
+
+/// Point the diff pane at the file selected in the tree, blank it when a directory is selected.
+/// Point the diff pane at the file selected in the list, taking the first file when the selected
+/// one is gone.
+fn sync_files_list_diff(state: &mut MainState) {
+    let LogRelocate::Concrete {
+        id,
+        file: file_reloc,
+    } = &mut state.log_reloc
+    else {
+        return;
+    };
+    let id = id.clone();
+
+    if let Some(file) = file_reloc
+        && let Some(i) = state
+            .log_files_list_view
+            .iter()
+            .enumerate()
+            .find_map(|(i, line)| {
+                line.iter()
+                    .any(|span| span.content == file.as_str())
+                    .then_some(i)
+            })
+    {
+        state.log_files_state.select(Some(i));
+    } else {
+        state.log_files_state.reset();
+        *file_reloc = state
+            .log_files_list_view
+            .lines
+            .first()
+            .and_then(|v| v.spans.first().map(|v| v.content.as_ref().into()));
+        state.log_diff_state.reset();
+    }
+
+    let diff = file_reloc.as_ref().map(|file| (id, file.clone()));
+    if let Some((id, file)) = diff {
+        debounce_diff(state, id, file);
+    } else {
+        state.log_diff_debounce_mut().cancel();
+        state.log_diff_view = Default::default();
+    }
+}
+
+fn sync_files_tree_diff(state: &mut MainState) {
+    let LogRelocate::Concrete { id, file } = &mut state.log_reloc else {
+        return;
+    };
+    let Some(path) = state.log_files_tree_state.selected().last() else {
+        return;
+    };
+
+    let Some(status_file) = state.log_files_tree_view.status_file(path) else {
+        // a directory has no diff of its own, so the preview is blank
+        *file = None;
+        state.log_diff_state.reset();
+        state.log_diff_view = BoxText::default();
+
+        return;
+    };
+    let id = id.clone();
+    // the tree keeps `ByteString`s, everything else in the log state is a `SmolStr`
+    let status_file = SmolStr::new(&*status_file);
+
+    *file = Some(status_file.clone());
+    state.log_diff_state.reset();
+    debounce_diff(state, id, status_file);
+}
+
 fn debounce_show(state: &mut MainState, id: SmolStr) {
     let jj = state.jj_handle.clone();
     state
@@ -1097,10 +1251,7 @@ fn debounce_diff(state: &mut MainState, id: SmolStr, status_file: SmolStr) {
     state
         .log_diff_debounce_mut()
         .spawn_try(|version| async move {
-            let (status, file) = status_file
-                .split_once(' ')
-                .unwrap_or(("", status_file.as_str()));
-            jj.diff(&id, status, file)
+            jj.diff(&id, &status_file)
                 .await
                 .map(|text| LogMsg::UpdateDiff { text, version })
         });

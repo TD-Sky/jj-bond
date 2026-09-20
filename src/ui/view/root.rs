@@ -26,6 +26,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
 
     match Config::load_or_default() {
         Ok(v) => {
+            state.main.log_files_view = v.log_files_view;
             state.config = v;
         }
         Err(e) => {
