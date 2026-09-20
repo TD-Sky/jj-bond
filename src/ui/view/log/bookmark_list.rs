@@ -4,7 +4,7 @@ use ratatui::{
     prelude::*,
 };
 use ratzgo::{
-    component::{Block, BorderType, ListState, column, list},
+    component::{BorderType, ListState, block, column, list},
     core::*,
     scroll::ScrollAction,
 };
@@ -80,9 +80,7 @@ pub fn view<'a>(VState { view, state, input }: VState<'a>) -> impl Component<Mes
                 .boxed()
         }
     };
-    let block = Block::new(inner)
-        .bordered()
-        .border_type(BorderType::Rounded);
+    let block = block(inner).bordered().border_type(BorderType::Rounded);
 
     block.map(Message::Log)
 }

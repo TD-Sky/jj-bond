@@ -41,7 +41,7 @@ pub fn view<'a>(
         file,
     }: VState<'a>,
 ) -> impl Component<LogMsg> + 'a {
-    let blocking: &dyn Fn(Paragraph<'_, _>) -> Block<'_, _> = match area {
+    let blocking: &dyn Fn(Paragraph<'_, _>) -> Block<'_, _, Paragraph<'_, _>> = match area {
         Some(viewport) => {
             let (h, w) = (view.height(), view.width());
             let (y, x) = state.scroll;
