@@ -261,7 +261,7 @@ impl LogHistoryState {
 
 impl<'a, Message> BindArea for LogHistory<'a, Message> {
     fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
-        self.state.area = Area::Ref(area.clone());
+        self.state.area = area.into();
         self
     }
 }

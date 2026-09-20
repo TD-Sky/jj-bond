@@ -48,8 +48,8 @@ pub fn view<'a>(state: &'a mut MainState) -> impl Component<OpMsg> + 'a {
         .widget_right_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(state.op_area.clone()),
-                position,
+                viewport: state.op_area.clone().into(),
+                position: position.into(),
             }),
             {
                 let viewport = state.op_area.clone();

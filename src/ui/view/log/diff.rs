@@ -50,8 +50,8 @@ pub fn view<'a>(
                     .widget_right_opt(
                         scrollbar(ScrollbarParams {
                             content_length: h,
-                            viewport: Area::Ref(viewport.clone()),
-                            position: y as usize,
+                            viewport: viewport.into(),
+                            position: (y as usize).into(),
                         }),
                         {
                             let viewport = viewport.clone();
@@ -64,8 +64,8 @@ pub fn view<'a>(
                     .widget_bottom_opt(
                         scrollbar(ScrollbarParams {
                             content_length: w,
-                            viewport: Area::Ref(viewport.clone()),
-                            position: x as usize,
+                            viewport: viewport.into(),
+                            position: (x as usize).into(),
                         })
                         .orientation(ScrollbarOrientation::HorizontalBottom)
                         .decorate(|v| v.thumb_symbol("/")),

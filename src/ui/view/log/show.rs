@@ -30,8 +30,8 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<LogM
         .widget_right_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position,
+                viewport: area.into(),
+                position: position.into(),
             }),
             {
                 let viewport = area.clone();

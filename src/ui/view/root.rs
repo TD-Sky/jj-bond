@@ -6,6 +6,7 @@ use ratzgo::{
     component::{column, stack},
     core::*,
     event::DefaultContext,
+    scroll::ScrollPosition,
 };
 
 use crate::{
@@ -26,6 +27,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
 
     match Config::load_or_default() {
         Ok(v) => {
+            state.main.log_files_view = v.log_files_view;
             state.config = v;
         }
         Err(e) => {
@@ -54,6 +56,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
         .tags_history_debounce
         .set(ctx.make_debounce(debounce_duration))
         .expect("tags history debounce must only be initialized once");
+    state.main.log_file_tree_state.position = ScrollPosition::Ref(Default::default());
 
     match NotifyGitChange::new(state.main.jj_handle.clone()) {
         Ok(notify) => {

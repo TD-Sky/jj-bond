@@ -35,8 +35,8 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<Tags
         .widget_right_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position: offset,
+                viewport: area.into(),
+                position: offset.into(),
             }),
             {
                 let viewport = area.clone();

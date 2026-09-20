@@ -104,14 +104,37 @@ impl JJHandle {
         Ok(output.stdout)
     }
 
-    pub async fn diff(
-        &self,
-        revset: &str,
-        status: &str,
-        file: &str,
-    ) -> Result<Vec<u8>, CommandError> {
+    pub async fn diff_files(&self, revset: &str) -> Result<Vec<u8>, CommandError> {
+        let output = self
+            .cmd_read()
+            .args([
+                "log",
+                "-r",
+                revset,
+                "--no-graph",
+                "--color=never",
+                "-T",
+                r#"self.diff().files().map(|e|
+                    if(e.status() == "renamed",
+                        concat("D ", e.source().path(), "\n", "A ", e.target().path()),
+                        concat(e.status_char(), " ", e.path()),
+                    )
+                ).join("\n")"#,
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(CommandError::Fail(output.stderr));
+        }
+
+        Ok(output.stdout)
+    }
+
+    pub async fn diff(&self, revset: &str, status_file: &str) -> Result<Vec<u8>, CommandError> {
         static RE_RENAME_DEST: LazyLock<Regex> =
             LazyLock::new(|| Regex::new(r#"(.*)\{.+ => (.+)\}(.*)"#).unwrap());
+
+        let (status, file) = status_file.split_once(' ').unwrap_or(("", status_file));
 
         let mut cmd = self.cmd_read();
 

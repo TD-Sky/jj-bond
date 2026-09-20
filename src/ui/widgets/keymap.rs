@@ -8,7 +8,7 @@ use ratatui::{
 };
 use ratzgo::{
     component::{BorderType, Row, ScrollbarParams, TableState, block, scrollbar, table},
-    core::{Area, BindArea, Component, OnKeyBuilder},
+    core::{BindArea, Component, OnKeyBuilder},
     scroll::ScrollAction,
 };
 use serde::Deserialize;
@@ -36,7 +36,7 @@ pub fn keymap<'a>(
     const HEADER_HEIGHT: usize = 2;
 
     let height = keymap_at(page).len() + HEADER_HEIGHT;
-    let offset = state.offset();
+    let position = state.pos_vertical.clone();
 
     let inner = table(state)
         .header(
@@ -96,8 +96,8 @@ pub fn keymap<'a>(
         .widget_right_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position: offset,
+                viewport: area.into(),
+                position,
             }),
             {
                 let viewport = area.clone();

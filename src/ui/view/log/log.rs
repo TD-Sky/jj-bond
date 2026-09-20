@@ -1,4 +1,7 @@
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::{
+    crossterm::event::{KeyCode, KeyModifiers},
+    text::Text,
+};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
     component::row,
@@ -9,13 +12,13 @@ use smol_str::SmolStr;
 
 use crate::{
     ui::{
-        HelpMsg, LogMsg, LogRelocate, MainState, Message, State,
+        FilesView, HelpMsg, LogMsg, LogRelocate, MainState, Message, State,
         view::log::{LogLayout, diff, files, history, show},
         widgets::{TextAreaState, Yanking},
     },
     utils::{
-        jj::{Abandon, Duplicate, LogMode, Rebase, Squash},
-        tui::{BoxText, LogText},
+        jj::{Abandon, Duplicate, JJHandle, LogMode, Rebase, Squash},
+        tui::{BoxText, LogText, PathTree},
     },
 };
 
@@ -101,14 +104,24 @@ pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
         ]
         .boxed()
     } else if state.log_layout == LogLayout::FILES_DIFF {
+        let directory = state.log_files_view == FilesView::Tree
+            && state
+                .log_file_tree_state
+                .selected()
+                .last()
+                .is_some_and(|path| state.log_file_tree_view.status_file(path).is_none());
+
         row! [
             css;
             [
                 files::view(files::VState {
-                    state: &mut state.log_files_state,
+                    state: &mut state.log_file_list_state,
                     area: &state.log_files_area,
                     log_focus: &state.log_focus,
-                    view: state.log_files_view.get(),
+                    view: state.log_file_list_view.get(),
+                    tab: state.log_files_view,
+                    tree_view: &state.log_file_tree_view,
+                    tree_state: &mut state.log_file_tree_state,
                     id: state
                         .log_history
                         .beacons()
@@ -119,7 +132,11 @@ pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
                     state: &mut state.log_diff_state,
                     area: None,
                     log_focus: &state.log_focus,
-                    view: state.log_diff_view.get(),
+                    view: if directory {
+                        Text::default()
+                    } else {
+                        state.log_diff_view.get()
+                    },
                     id: None,
                     file: None,
                 }),
@@ -211,9 +228,10 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             if state.log_layout == LogLayout::HISTORY_FILES {
                 debounce_show(state, id);
             } else if state.log_layout == LogLayout::FILES_DIFF {
-                let jj = state.jj_handle.clone();
-                ctx.queue()
-                    .spawn_try(async move { jj.diff_sum(&id).await.map(LogMsg::UpdateFiles) });
+                match state.log_files_view {
+                    FilesView::List => spawn_files_list(&state.jj_handle, ctx, id),
+                    FilesView::Tree => spawn_files_tree(&state.jj_handle, ctx, id),
+                }
             }
         }
         LogMsg::ScrollHistory(action) => {
@@ -249,19 +267,25 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 .beacons()
                 .get(state.log_history_state.hovered())
             {
+                let id = change.id.clone();
+
                 if state.log_layout == LogLayout::HISTORY_FILES {
-                    debounce_show(state, change.id.clone());
-                    state.log_files_state.select_first();
+                    debounce_show(state, id);
                 } else if state.log_layout == LogLayout::FILES_DIFF {
-                    let change_id = change.id.clone();
-                    let jj = state.jj_handle.clone();
-                    ctx.queue().spawn_try(async move {
-                        jj.diff_sum(&change_id).await.map(LogMsg::UpdateFiles)
-                    });
+                    match state.log_files_view {
+                        FilesView::List => spawn_files_list(&state.jj_handle, ctx, id),
+                        FilesView::Tree => spawn_files_tree(&state.jj_handle, ctx, id),
+                    }
                 }
             }
         }
-        LogMsg::UpdateFiles(s) => {
+        LogMsg::FilesViewSelect(view) => {
+            if state.log_files_view != view {
+                state.log_files_view = view;
+                ctx.queue().push(Message::Refresh);
+            }
+        }
+        LogMsg::ScrollFileTree(action) => {
             let LogRelocate::Concrete {
                 id,
                 file: file_reloc,
@@ -270,37 +294,122 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 return;
             };
 
-            state.log_files_view = s.into();
+            state.log_file_tree_state.scroll_lines(action);
+
+            let Some(path) = state.log_file_tree_state.selected().last() else {
+                return;
+            };
+
+            let Some(status_file) = state.log_file_tree_view.status_file(path) else {
+                *file_reloc = None;
+                state.log_diff_state.reset();
+                state.log_diff_view = Default::default();
+
+                return;
+            };
+            *file_reloc = Some(SmolStr::new(status_file));
+
+            let id = id.clone();
+            debounce_diff(state, id, status_file.clone());
+        }
+        LogMsg::FileTreeOpen => {
+            state.log_file_tree_state.key_right();
+        }
+        LogMsg::FileTreeClose => {
+            state.log_file_tree_state.key_left();
+        }
+        LogMsg::UpdateFileList(list) => {
+            let LogRelocate::Concrete {
+                id,
+                file: file_reloc,
+            } = &mut state.log_reloc
+            else {
+                return;
+            };
+
+            if state.log_files_view != FilesView::List {
+                spawn_files_tree(&state.jj_handle, ctx, id.clone());
+                return;
+            }
+
+            state.log_file_list_view = list.into();
 
             if let Some(file) = file_reloc
-                && let Some(i) = state
-                    .log_files_view
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, line)| {
-                        line.iter()
-                            .any(|span| span.content == file.as_str())
-                            .then_some(i)
-                    })
+                && let Some(i) =
+                    state
+                        .log_file_list_view
+                        .iter()
+                        .enumerate()
+                        .find_map(|(i, line)| {
+                            line.iter()
+                                .any(|span| span.content == file.as_str())
+                                .then_some(i)
+                        })
             {
-                state.log_files_state.select(Some(i));
+                state.log_file_list_state.select(Some(i));
             } else {
-                state.log_files_state.reset();
+                state.log_file_list_state.reset();
                 *file_reloc = state
-                    .log_files_view
+                    .log_file_list_view
                     .lines
                     .first()
                     .and_then(|v| v.spans.first().map(|v| v.content.as_ref().into()));
                 state.log_diff_state.reset();
             }
 
-            let diff = file_reloc.as_ref().map(|file| (id.clone(), file.clone()));
-            if let Some((id, file)) = diff {
-                debounce_diff(state, id, file);
-            } else {
-                state.log_diff_debounce_mut().cancel();
-                state.log_diff_view = Default::default();
+            match file_reloc.as_ref().map(|file| (id.clone(), file.clone())) {
+                Some((id, file)) => {
+                    debounce_diff(state, id, file);
+                }
+                None => {
+                    state.log_diff_debounce_mut().cancel();
+                    state.log_diff_view = Default::default();
+                }
             }
+        }
+        LogMsg::UpdateFileTree(tree) => {
+            let LogRelocate::Concrete {
+                id,
+                file: file_reloc,
+            } = &mut state.log_reloc
+            else {
+                return;
+            };
+
+            if state.log_files_view != FilesView::Tree {
+                spawn_files_list(&state.jj_handle, ctx, id.clone());
+                return;
+            }
+
+            state.log_file_tree_state.open_all(tree.get());
+
+            // NOTE: keep the selection of the previous tree when that node still exists
+            let selected = state.log_file_tree_state.selected();
+            let visible = state.log_file_tree_state.flatten(tree.get());
+            if (selected.is_empty() || !visible.iter().any(|v| v.identifier == selected))
+                && let Some(first) = tree.get().first()
+            {
+                state
+                    .log_file_tree_state
+                    .select(vec![first.identifier().clone()]);
+            }
+
+            state.log_file_tree_view = tree;
+
+            let Some(path) = state.log_file_tree_state.selected().last() else {
+                return;
+            };
+
+            let Some(status_file) = state.log_file_tree_view.status_file(path) else {
+                *file_reloc = None;
+                state.log_diff_state.reset();
+                state.log_diff_view = Default::default();
+
+                return;
+            };
+
+            let id = id.clone();
+            debounce_diff(state, id, status_file.clone());
         }
         LogMsg::UpdateDiff { text, version } => {
             if state.log_diff_debounce().version() != version
@@ -329,7 +438,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 .log_show_state
                 .scroll_vertical(action, state.log_show_view.height());
         }
-        LogMsg::ScrollFiles(action) => {
+        LogMsg::ScrollFileList(action) => {
             let LogRelocate::Concrete {
                 file: file_reloc, ..
             } = &mut state.log_reloc
@@ -338,11 +447,11 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             };
 
             state
-                .log_files_state
-                .scroll_lines(action, state.log_files_view.height());
+                .log_file_list_state
+                .scroll_lines(action, state.log_file_list_view.height());
 
-            if let Some(i) = state.log_files_state.selected()
-                && let Some(file) = state.log_files_view.lines.get(i).map(|v| {
+            if let Some(i) = state.log_file_list_state.selected()
+                && let Some(file) = state.log_file_list_view.lines.get(i).map(|v| {
                     v.spans
                         .first()
                         .map(|v| v.content.as_ref())
@@ -357,7 +466,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     .beacons()
                     .get(state.log_history_state.hovered())
                 {
-                    debounce_diff(state, change.id.clone(), file.into());
+                    debounce_diff(state, change.id.clone(), SmolStr::from(file));
                 }
             }
         }
@@ -512,7 +621,9 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     if let Err(e) = res {
                         ratzgo::log::error("`git fetch`", e.into_text());
                     }
-                    Message::Refresh // force update anyway
+
+                    // NOTE: force update anyway
+                    Message::Refresh
                 });
             }
         }
@@ -1030,7 +1141,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 })
                 .detach();
 
-                // force update anyway
+                // NOTE: force update anyway
                 ctx.queue().push(Message::Refresh);
             }
         }
@@ -1081,6 +1192,21 @@ pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) 
     });
 }
 
+fn spawn_files_list(jj_handle: &JJHandle, ctx: &mut DefaultContext<Message, State>, id: SmolStr) {
+    let jj = jj_handle.clone();
+    ctx.queue()
+        .spawn_try(async move { jj.diff_sum(&id).await.map(LogMsg::UpdateFileList) });
+}
+
+fn spawn_files_tree(jj_handle: &JJHandle, ctx: &mut DefaultContext<Message, State>, id: SmolStr) {
+    let jj = jj_handle.clone();
+    ctx.queue().spawn_try(async move {
+        jj.diff_files(&id)
+            .await
+            .map(|raw| LogMsg::UpdateFileTree(PathTree::new(&raw).unwrap_or_default()))
+    });
+}
+
 fn debounce_show(state: &mut MainState, id: SmolStr) {
     let jj = state.jj_handle.clone();
     state
@@ -1092,15 +1218,15 @@ fn debounce_show(state: &mut MainState, id: SmolStr) {
         });
 }
 
-fn debounce_diff(state: &mut MainState, id: SmolStr, status_file: SmolStr) {
+fn debounce_diff<S>(state: &mut MainState, id: SmolStr, status_file: S)
+where
+    S: AsRef<str> + 'static,
+{
     let jj = state.jj_handle.clone();
     state
         .log_diff_debounce_mut()
         .spawn_try(|version| async move {
-            let (status, file) = status_file
-                .split_once(' ')
-                .unwrap_or(("", status_file.as_str()));
-            jj.diff(&id, status, file)
+            jj.diff(&id, status_file.as_ref())
                 .await
                 .map(|text| LogMsg::UpdateDiff { text, version })
         });

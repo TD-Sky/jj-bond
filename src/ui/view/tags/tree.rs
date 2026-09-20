@@ -115,7 +115,7 @@ pub fn view<'a>(
     }
 
     let height = state.flatten(view.get()).len();
-    let offset = state.get_offset();
+    let position = state.position.clone();
 
     let inner = Tree::new(view.get(), state)
         .bind_area(area)
@@ -163,8 +163,8 @@ pub fn view<'a>(
         .widget_right_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position: offset,
+                viewport: area.into(),
+                position,
             }),
             {
                 let viewport = area.clone();
