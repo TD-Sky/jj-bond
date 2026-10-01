@@ -257,6 +257,20 @@ impl LogHistoryState {
 
         Some(change)
     }
+
+    pub fn scroll_vertical_fit(&mut self, log: &LogText) {
+        let Some(change) = log.beacons().get(self.hovered()) else {
+            return;
+        };
+
+        self.scroll.0 = repos_y_anchored(
+            self.scroll.0,
+            log.text().height(),
+            self.area.get().height,
+            4,
+            change.range_line.start,
+        );
+    }
 }
 
 impl<'a, Message> BindArea for LogHistory<'a, Message> {

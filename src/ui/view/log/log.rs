@@ -1,3 +1,5 @@
+use std::mem;
+
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
     text::Text,
@@ -181,6 +183,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
 
                             *id = change.id.clone();
                             file.take();
+                            state.log_show_state.reset();
                             state.log_diff_state.reset();
                         }
                     };
@@ -196,6 +199,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                         id: change.id.clone(),
                         file: None,
                     };
+                    state.log_show_state.reset();
                     state.log_diff_state.reset();
 
                     change.id.clone()
@@ -208,6 +212,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                                 return;
                             };
 
+                            state.log_show_state.reset();
                             state.log_diff_state.reset();
                             file.take();
 
@@ -224,6 +229,12 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     change.id.clone()
                 }
             };
+
+            if mem::take(&mut state.log_history_should_fit) {
+                state
+                    .log_history_state
+                    .scroll_vertical_fit(&state.log_history);
+            }
 
             if state.log_layout == LogLayout::HISTORY_FILES {
                 debounce_show(state, id);
@@ -281,8 +292,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             }
         }
         LogMsg::FilesViewSelect(view) => {
-            if state.log_files_view != view {
-                state.log_files_view = view;
+            if mem::replace(&mut state.log_files_view, view) != view {
                 ctx.queue().push(Message::Refresh);
             }
         }
@@ -517,7 +527,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                             state.log_reloc = LogRelocate::Index {
                                 index: state.log_history_state.hovered(),
                                 file: file.take(),
-                            }
+                            };
+                            state.log_history_should_fit = true;
                         }
                     }
                     Err(e) => {
@@ -576,6 +587,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                                     LogRelocate::Concrete { id: to, file: None }
                                 }
                             };
+                            state.main.log_history_should_fit = true;
                         }
                         Err(e) => {
                             ratzgo::log::error("`squash`", e.into_text());

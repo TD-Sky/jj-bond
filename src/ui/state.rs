@@ -50,6 +50,7 @@ pub struct MainState {
     pub log_history: LogText,
     pub log_history_state: LogHistoryState,
     pub log_history_area: Rc<Cell<Rect>>,
+    pub log_history_should_fit: bool,
     pub log_show_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub log_show_state: ParagraphState,
     pub log_show_view: BoxText,
