@@ -127,6 +127,9 @@ pub fn view(state: &mut State) -> Box<dyn Component<Message> + '_> {
         help::view(&mut state.help),
         notification::view(&state.notify),
     ]
+    // NOTE: Windows will capture key release events,
+    //       jj-bond doesn't need them.
+    .filter_key(|k| !k.is_release())
     .boxed()
 }
 
