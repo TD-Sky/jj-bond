@@ -311,9 +311,10 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 return;
             };
 
+            state.log_diff_state.reset();
+
             let Some(status_file) = state.log_file_tree_view.status_file(path) else {
                 *file_reloc = None;
-                state.log_diff_state.reset();
                 state.log_diff_view = Default::default();
 
                 return;
@@ -461,6 +462,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 .log_file_list_state
                 .scroll_lines(action, state.log_file_list_view.height());
 
+            state.log_diff_state.reset();
+
             if let Some(i) = state.log_file_list_state.selected()
                 && let Some(file) = state.log_file_list_view.lines.get(i).map(|v| {
                     v.spans
@@ -470,7 +473,6 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 })
             {
                 *file_reloc = Some(file.into());
-                state.log_diff_state.reset();
 
                 if let Some(change) = state
                     .log_history
@@ -903,7 +905,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         LogMsg::Rebase { id } => {
             state.log_rebase = match state.log_history_state.yanking() {
                 Some(Yanking::One { id: from }) => {
-                    can_rebase_onto(from, &id).then(|| Rebase::One {
+                    revisions_exclude_target(from, &id).then(|| Rebase::One {
                         from: from.clone(),
                         to: id,
                     })
@@ -911,7 +913,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 Some(Yanking::Range {
                     base: (start, end),
                     ids,
-                }) => can_rebase_onto(ids, &id).then(|| Rebase::Range {
+                }) => revisions_exclude_target(ids, &id).then(|| Rebase::Range {
                     start: start.clone(),
                     end: end.clone(),
                     to: id.clone(),
@@ -940,47 +942,20 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         }
         LogMsg::Duplicate { id } => {
             state.log_duplicate = match state.log_history_state.yanking() {
-                Some(Yanking::One { id: from }) => match from.split_once('/') {
-                    Some((change_id, change_offset))
-                        if let Some((short_id, divergent)) = id.split_once('/')
-                            && (!change_id.starts_with(short_id) || change_offset != divergent) =>
-                    {
-                        Some(Duplicate::One {
-                            from: from.clone(),
-                            to: id,
-                        })
-                    }
-                    None if !from.starts_with(id.as_str()) => Some(Duplicate::One {
+                Some(Yanking::One { id: from }) => {
+                    revisions_exclude_target(from, &id).then(|| Duplicate::One {
                         from: from.clone(),
                         to: id,
-                    }),
-                    _ => None,
-                },
+                    })
+                }
                 Some(Yanking::Range {
                     base: (start, end),
                     ids,
-                }) => {
-                    match ids
-                        .lines()
-                        .all(|change_id| match change_id.split_once('/') {
-                            Some((change_id, change_offset))
-                                if let Some((short_id, divergent)) = id.split_once('/')
-                                    && (!change_id.starts_with(short_id)
-                                        || change_offset != divergent) =>
-                            {
-                                true
-                            }
-                            None if !change_id.starts_with(id.as_str()) => true,
-                            _ => false,
-                        }) {
-                        true => Some(Duplicate::Range {
-                            start: start.clone(),
-                            end: end.clone(),
-                            to: id.clone(),
-                        }),
-                        false => None,
-                    }
-                }
+                }) => revisions_exclude_target(ids, &id).then(|| Duplicate::Range {
+                    start: start.clone(),
+                    end: end.clone(),
+                    to: id,
+                }),
                 None => None,
             };
         }
@@ -1252,7 +1227,7 @@ fn close_rebase_list(state: &mut MainState) {
     state.log_modal_rebase_list_state.1.select(None);
 }
 
-fn can_rebase_onto(revisions: &str, target: &str) -> bool {
+fn revisions_exclude_target(revisions: &str, target: &str) -> bool {
     revisions
         .lines()
         .all(|revision| !revision_eq(revision, target))
@@ -1270,7 +1245,7 @@ fn revision_eq(lhs: &str, rhs: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{can_rebase_onto, revision_eq};
+    use super::{revision_eq, revisions_exclude_target};
 
     #[test]
     fn compares_regular_revisions_by_change_id_prefix() {
@@ -1293,21 +1268,40 @@ mod tests {
 
     #[test]
     fn allows_rebasing_divergent_revision_onto_regular_revision() {
-        assert!(can_rebase_onto("abcdefghijkl/0", "xyzuvw"));
+        assert!(revisions_exclude_target("abcdefghijkl/0", "xyzuvw"));
     }
 
     #[test]
     fn rejects_rebasing_onto_the_same_divergent_revision() {
-        assert!(!can_rebase_onto("abcdefghijkl/0", "abcdefgh/0"));
-        assert!(can_rebase_onto("abcdefghijkl/0", "abcdefgh/1"));
+        assert!(!revisions_exclude_target("abcdefghijkl/0", "abcdefgh/0"));
+        assert!(revisions_exclude_target("abcdefghijkl/0", "abcdefgh/1"));
     }
 
     #[test]
     fn rejects_range_containing_the_divergent_target_revision() {
         let revisions = "abcdefghijkl/0\nxyzuvwxyzuvw\n";
 
-        assert!(!can_rebase_onto(revisions, "abcdefgh/0"));
-        assert!(can_rebase_onto(revisions, "abcdefgh/1"));
-        assert!(can_rebase_onto(revisions, "mnopqrst"));
+        assert!(!revisions_exclude_target(revisions, "abcdefgh/0"));
+        assert!(revisions_exclude_target(revisions, "abcdefgh/1"));
+        assert!(revisions_exclude_target(revisions, "mnopqrst"));
+    }
+
+    #[test]
+    fn allows_duplicating_divergent_revision_onto_regular_revision() {
+        assert!(revisions_exclude_target("abcdefghijkl/0", "xyzuvw"));
+    }
+
+    #[test]
+    fn allows_duplicating_range_with_divergent_revision_onto_regular_revision() {
+        assert!(revisions_exclude_target(
+            "abcdefghijkl/0\nxyzuvwxyzuvw\n",
+            "mnopqrst"
+        ));
+    }
+
+    #[test]
+    fn rejects_duplicating_onto_same_divergent_revision() {
+        assert!(!revisions_exclude_target("abcdefghijkl/0", "abcdefgh/0"));
+        assert!(revisions_exclude_target("abcdefghijkl/0", "abcdefgh/1"));
     }
 }
