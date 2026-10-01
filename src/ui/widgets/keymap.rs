@@ -93,7 +93,7 @@ pub fn keymap<'a>(
     block(inner.bind_area(area))
         .bordered()
         .border_type(BorderType::Rounded)
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: area.into(),

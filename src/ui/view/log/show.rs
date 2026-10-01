@@ -27,7 +27,7 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<LogM
     block(inner)
         .bordered()
         .border_type(BorderType::Rounded)
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: area.into(),

@@ -45,7 +45,7 @@ pub fn view<'a>(state: &'a mut MainState) -> impl Component<OpMsg> + 'a {
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: state.op_area.clone().into(),

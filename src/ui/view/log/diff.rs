@@ -47,7 +47,7 @@ pub fn view<'a>(
             let (y, x) = state.scroll;
             &move |inner| {
                 block(inner.bind_area(viewport))
-                    .widget_right_opt(
+                    .right_component_opt(
                         scrollbar(ScrollbarParams {
                             content_length: h,
                             viewport: viewport.into(),
@@ -61,7 +61,7 @@ pub fn view<'a>(
                             }
                         },
                     )
-                    .widget_bottom_opt(
+                    .bottom_component_opt(
                         scrollbar(ScrollbarParams {
                             content_length: w,
                             viewport: viewport.into(),

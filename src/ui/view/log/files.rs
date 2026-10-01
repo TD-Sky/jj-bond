@@ -76,8 +76,8 @@ pub fn view<'a>(
             |k| k.code == KeyCode::Tab,
             LogMsg::FilesViewSelect(toggled(tab)),
         )
-        .widget_top(tabs(tab), tabs_area)
-        .widget_right_opt(
+        .top_component(tabs(tab), tabs_area)
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: content_height,
                 viewport: area.into(),

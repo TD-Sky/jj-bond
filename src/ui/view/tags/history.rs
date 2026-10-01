@@ -32,7 +32,7 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<Tags
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
                 viewport: area.into(),
