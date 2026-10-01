@@ -246,6 +246,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 id: change.id.clone(),
                 file: None,
             };
+            state.log_show_state.reset();
             state.log_diff_state.reset();
 
             debounce_show(state, change.id.clone());
