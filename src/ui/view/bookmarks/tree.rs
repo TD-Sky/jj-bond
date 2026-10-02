@@ -9,10 +9,10 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
 };
 use smol_str::SmolStr;
 
@@ -42,7 +42,7 @@ pub fn view<'a>(
         modal_delete,
         modal_remotes,
     }: VState<'a>,
-) -> impl Into<Element<'a, BookmarksMsg>> {
+) -> impl Component<BookmarksMsg> + 'a {
     if let Some(bookmark) = modal_delete {
         mount_point.mount(
             Modal::new(
@@ -99,7 +99,7 @@ pub fn view<'a>(
     }
 
     let height = state.flatten(view.get()).len();
-    let offset = state.get_offset();
+    let position = state.position.clone();
 
     let inner = Tree::new(view.get(), state)
         .bind_area(area)
@@ -143,11 +143,11 @@ pub fn view<'a>(
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position: offset,
+                viewport: area.into(),
+                position,
             }),
             {
                 let viewport = area.clone();

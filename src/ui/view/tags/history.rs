@@ -5,8 +5,8 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ScrollbarParams, block, scrollbar},
     core::*,
-    widget::{BorderType, ScrollbarParams, block, scrollbar},
 };
 
 use crate::{
@@ -24,7 +24,7 @@ pub struct VState<'a> {
     pub view: &'a LogText,
 }
 
-pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Into<Element<'a, TagsMsg>> {
+pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<TagsMsg> + 'a {
     let offset = state.offset();
     let height = view.text().height();
 
@@ -32,11 +32,11 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Into<Element<'
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position: offset,
+                viewport: area.into(),
+                position: offset.into(),
             }),
             {
                 let viewport = area.clone();

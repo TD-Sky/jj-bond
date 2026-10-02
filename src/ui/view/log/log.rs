@@ -1,25 +1,30 @@
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use std::mem;
+
+use ratatui::{
+    crossterm::event::{KeyCode, KeyModifiers},
+    text::Text,
+};
 use ratatui_textarea::CursorMove;
 use ratzgo::{
-    core::Element,
+    component::row,
+    core::{Component, ComponentExt},
     event::{DefaultContext, YieldFg},
-    widget::row,
 };
 use smol_str::SmolStr;
 
 use crate::{
     ui::{
-        HelpMsg, LogMsg, LogRelocate, MainState, Message, State,
+        FilesView, HelpMsg, LogMsg, LogRelocate, MainState, Message, State,
         view::log::{LogLayout, diff, files, history, show},
         widgets::{TextAreaState, Yanking},
     },
     utils::{
-        jj::{Abandon, Duplicate, LogMode, Rebase, Squash},
-        tui::{BoxText, LogText},
+        jj::{Abandon, Duplicate, JJHandle, LogMode, Rebase, Squash},
+        tui::{BoxText, CompactPathTree, LogText},
     },
 };
 
-pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
+pub fn view<'a>(state: &'a mut MainState) -> Box<dyn Component<LogMsg> + 'a> {
     let css = state.log_layout.constraints();
 
     if state.log_layout == LogLayout::HISTORY {
@@ -55,7 +60,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 .as_ref()
                 .map(|v| (v, &mut state.log_modal_unsync_state)),
         })
-        .into()
+        .boxed()
     } else if state.log_layout == LogLayout::HISTORY_FILES {
         row! [
             css;
@@ -99,16 +104,26 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 }),
             ]
         ]
-        .into()
+        .boxed()
     } else if state.log_layout == LogLayout::FILES_DIFF {
+        let directory = state.log_files_view == FilesView::Tree
+            && state
+                .log_file_tree_state
+                .selected()
+                .last()
+                .is_some_and(|path| state.log_file_tree_view.status_file(path).is_none());
+
         row! [
             css;
             [
                 files::view(files::VState {
-                    state: &mut state.log_files_state,
+                    state: &mut state.log_file_list_state,
                     area: &state.log_files_area,
                     log_focus: &state.log_focus,
-                    view: state.log_files_view.get(),
+                    view: state.log_file_list_view.get(),
+                    tab: state.log_files_view,
+                    tree_view: &state.log_file_tree_view,
+                    tree_state: &mut state.log_file_tree_state,
                     id: state
                         .log_history
                         .beacons()
@@ -119,13 +134,17 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                     state: &mut state.log_diff_state,
                     area: None,
                     log_focus: &state.log_focus,
-                    view: state.log_diff_view.get(),
+                    view: if directory {
+                        Text::default()
+                    } else {
+                        state.log_diff_view.get()
+                    },
                     id: None,
                     file: None,
                 }),
             ]
         ]
-        .into()
+        .boxed()
     } else if state.log_layout == LogLayout::DIFF {
         diff::view(diff::VState {
             state: &mut state.log_diff_state,
@@ -139,7 +158,7 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, LogMsg> {
                 .map(|v| v.id.as_str()),
             file: state.log_reloc.file(),
         })
-        .into()
+        .boxed()
     } else {
         unreachable!()
     }
@@ -164,6 +183,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
 
                             *id = change.id.clone();
                             file.take();
+                            state.log_show_state.reset();
                             state.log_diff_state.reset();
                         }
                     };
@@ -179,6 +199,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                         id: change.id.clone(),
                         file: None,
                     };
+                    state.log_show_state.reset();
                     state.log_diff_state.reset();
 
                     change.id.clone()
@@ -191,6 +212,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                                 return;
                             };
 
+                            state.log_show_state.reset();
                             state.log_diff_state.reset();
                             file.take();
 
@@ -208,12 +230,19 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 }
             };
 
+            if mem::take(&mut state.log_history_should_fit) {
+                state
+                    .log_history_state
+                    .scroll_vertical_fit(&state.log_history);
+            }
+
             if state.log_layout == LogLayout::HISTORY_FILES {
                 debounce_show(state, id);
             } else if state.log_layout == LogLayout::FILES_DIFF {
-                let jj = state.jj_handle.clone();
-                ctx.queue()
-                    .spawn_try(async move { jj.diff_sum(&id).await.map(LogMsg::UpdateFiles) });
+                match state.log_files_view {
+                    FilesView::List => spawn_files_list(&state.jj_handle, ctx, id),
+                    FilesView::Tree => spawn_files_tree(&state.jj_handle, ctx, id),
+                }
             }
         }
         LogMsg::ScrollHistory(action) => {
@@ -228,6 +257,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 id: change.id.clone(),
                 file: None,
             };
+            state.log_show_state.reset();
             state.log_diff_state.reset();
 
             debounce_show(state, change.id.clone());
@@ -249,19 +279,24 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 .beacons()
                 .get(state.log_history_state.hovered())
             {
+                let id = change.id.clone();
+
                 if state.log_layout == LogLayout::HISTORY_FILES {
-                    debounce_show(state, change.id.clone());
-                    state.log_files_state.select_first();
+                    debounce_show(state, id);
                 } else if state.log_layout == LogLayout::FILES_DIFF {
-                    let change_id = change.id.clone();
-                    let jj = state.jj_handle.clone();
-                    ctx.queue().spawn_try(async move {
-                        jj.diff_sum(&change_id).await.map(LogMsg::UpdateFiles)
-                    });
+                    match state.log_files_view {
+                        FilesView::List => spawn_files_list(&state.jj_handle, ctx, id),
+                        FilesView::Tree => spawn_files_tree(&state.jj_handle, ctx, id),
+                    }
                 }
             }
         }
-        LogMsg::UpdateFiles(s) => {
+        LogMsg::FilesViewSelect(view) => {
+            if mem::replace(&mut state.log_files_view, view) != view {
+                ctx.queue().push(Message::Refresh);
+            }
+        }
+        LogMsg::ScrollFileTree(action) => {
             let LogRelocate::Concrete {
                 id,
                 file: file_reloc,
@@ -270,37 +305,123 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 return;
             };
 
-            state.log_files_view = s.into();
+            state.log_file_tree_state.scroll_lines(action);
+
+            let Some(path) = state.log_file_tree_state.selected().last() else {
+                return;
+            };
+
+            state.log_diff_state.reset();
+
+            let Some(status_file) = state.log_file_tree_view.status_file(path) else {
+                *file_reloc = None;
+                state.log_diff_view = Default::default();
+
+                return;
+            };
+            *file_reloc = Some(SmolStr::new(status_file));
+
+            let id = id.clone();
+            debounce_diff(state, id, status_file.clone());
+        }
+        LogMsg::FileTreeOpen => {
+            state.log_file_tree_state.key_right();
+        }
+        LogMsg::FileTreeClose => {
+            state.log_file_tree_state.key_left();
+        }
+        LogMsg::UpdateFileList(list) => {
+            let LogRelocate::Concrete {
+                id,
+                file: file_reloc,
+            } = &mut state.log_reloc
+            else {
+                return;
+            };
+
+            if state.log_files_view != FilesView::List {
+                spawn_files_tree(&state.jj_handle, ctx, id.clone());
+                return;
+            }
+
+            state.log_file_list_view = list.into();
 
             if let Some(file) = file_reloc
-                && let Some(i) = state
-                    .log_files_view
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, line)| {
-                        line.iter()
-                            .any(|span| span.content == file.as_str())
-                            .then_some(i)
-                    })
+                && let Some(i) =
+                    state
+                        .log_file_list_view
+                        .iter()
+                        .enumerate()
+                        .find_map(|(i, line)| {
+                            line.iter()
+                                .any(|span| span.content == file.as_str())
+                                .then_some(i)
+                        })
             {
-                state.log_files_state.select(Some(i));
+                state.log_file_list_state.select(Some(i));
             } else {
-                state.log_files_state.reset();
+                state.log_file_list_state.reset();
                 *file_reloc = state
-                    .log_files_view
+                    .log_file_list_view
                     .lines
                     .first()
                     .and_then(|v| v.spans.first().map(|v| v.content.as_ref().into()));
                 state.log_diff_state.reset();
             }
 
-            let diff = file_reloc.as_ref().map(|file| (id.clone(), file.clone()));
-            if let Some((id, file)) = diff {
-                debounce_diff(state, id, file);
-            } else {
-                state.log_diff_debounce_mut().cancel();
-                state.log_diff_view = Default::default();
+            match file_reloc.as_ref().map(|file| (id.clone(), file.clone())) {
+                Some((id, file)) => {
+                    debounce_diff(state, id, file);
+                }
+                None => {
+                    state.log_diff_debounce_mut().cancel();
+                    state.log_diff_view = Default::default();
+                }
             }
+        }
+        LogMsg::UpdateFileTree(tree) => {
+            let LogRelocate::Concrete {
+                id,
+                file: file_reloc,
+            } = &mut state.log_reloc
+            else {
+                return;
+            };
+
+            if state.log_files_view != FilesView::Tree {
+                spawn_files_list(&state.jj_handle, ctx, id.clone());
+                return;
+            }
+
+            state.log_file_tree_state.open_all(tree.get());
+
+            // NOTE: keep the selection of the previous tree when that node still exists
+            let selected = state.log_file_tree_state.selected();
+            let visible = state.log_file_tree_state.flatten(tree.get());
+            if (selected.is_empty() || !visible.iter().any(|v| v.identifier == selected))
+                && let Some(first) = tree.get().first()
+            {
+                state
+                    .log_file_tree_state
+                    .select(vec![first.identifier().clone()]);
+            }
+
+            state.log_file_tree_view = tree;
+
+            let Some(path) = state.log_file_tree_state.selected().last() else {
+                return;
+            };
+
+            let Some(status_file) = state.log_file_tree_view.status_file(path) else {
+                *file_reloc = None;
+                state.log_diff_state.reset();
+                state.log_diff_view = Default::default();
+
+                return;
+            };
+
+            let id = id.clone();
+            debounce_diff(state, id, status_file.clone());
         }
         LogMsg::UpdateDiff { text, version } => {
             if state.log_diff_debounce().version() != version
@@ -329,7 +450,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 .log_show_state
                 .scroll_vertical(action, state.log_show_view.height());
         }
-        LogMsg::ScrollFiles(action) => {
+        LogMsg::ScrollFileList(action) => {
             let LogRelocate::Concrete {
                 file: file_reloc, ..
             } = &mut state.log_reloc
@@ -338,11 +459,13 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
             };
 
             state
-                .log_files_state
-                .scroll_lines(action, state.log_files_view.height());
+                .log_file_list_state
+                .scroll_lines(action, state.log_file_list_view.height());
 
-            if let Some(i) = state.log_files_state.selected()
-                && let Some(file) = state.log_files_view.lines.get(i).map(|v| {
+            state.log_diff_state.reset();
+
+            if let Some(i) = state.log_file_list_state.selected()
+                && let Some(file) = state.log_file_list_view.lines.get(i).map(|v| {
                     v.spans
                         .first()
                         .map(|v| v.content.as_ref())
@@ -350,14 +473,13 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 })
             {
                 *file_reloc = Some(file.into());
-                state.log_diff_state.reset();
 
                 if let Some(change) = state
                     .log_history
                     .beacons()
                     .get(state.log_history_state.hovered())
                 {
-                    debounce_diff(state, change.id.clone(), file.into());
+                    debounce_diff(state, change.id.clone(), SmolStr::from(file));
                 }
             }
         }
@@ -407,7 +529,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                             state.log_reloc = LogRelocate::Index {
                                 index: state.log_history_state.hovered(),
                                 file: file.take(),
-                            }
+                            };
+                            state.log_history_should_fit = true;
                         }
                     }
                     Err(e) => {
@@ -466,6 +589,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                                     LogRelocate::Concrete { id: to, file: None }
                                 }
                             };
+                            state.main.log_history_should_fit = true;
                         }
                         Err(e) => {
                             ratzgo::log::error("`squash`", e.into_text());
@@ -512,7 +636,9 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                     if let Err(e) = res {
                         ratzgo::log::error("`git fetch`", e.into_text());
                     }
-                    Message::Refresh // force update anyway
+
+                    // NOTE: force update anyway
+                    Message::Refresh
                 });
             }
         }
@@ -779,7 +905,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         LogMsg::Rebase { id } => {
             state.log_rebase = match state.log_history_state.yanking() {
                 Some(Yanking::One { id: from }) => {
-                    can_rebase_onto(from, &id).then(|| Rebase::One {
+                    revisions_exclude_target(from, &id).then(|| Rebase::One {
                         from: from.clone(),
                         to: id,
                     })
@@ -787,7 +913,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 Some(Yanking::Range {
                     base: (start, end),
                     ids,
-                }) => can_rebase_onto(ids, &id).then(|| Rebase::Range {
+                }) => revisions_exclude_target(ids, &id).then(|| Rebase::Range {
                     start: start.clone(),
                     end: end.clone(),
                     to: id.clone(),
@@ -816,47 +942,20 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
         }
         LogMsg::Duplicate { id } => {
             state.log_duplicate = match state.log_history_state.yanking() {
-                Some(Yanking::One { id: from }) => match from.split_once('/') {
-                    Some((change_id, change_offset))
-                        if let Some((short_id, divergent)) = id.split_once('/')
-                            && (!change_id.starts_with(short_id) || change_offset != divergent) =>
-                    {
-                        Some(Duplicate::One {
-                            from: from.clone(),
-                            to: id,
-                        })
-                    }
-                    None if !from.starts_with(id.as_str()) => Some(Duplicate::One {
+                Some(Yanking::One { id: from }) => {
+                    revisions_exclude_target(from, &id).then(|| Duplicate::One {
                         from: from.clone(),
                         to: id,
-                    }),
-                    _ => None,
-                },
+                    })
+                }
                 Some(Yanking::Range {
                     base: (start, end),
                     ids,
-                }) => {
-                    match ids
-                        .lines()
-                        .all(|change_id| match change_id.split_once('/') {
-                            Some((change_id, change_offset))
-                                if let Some((short_id, divergent)) = id.split_once('/')
-                                    && (!change_id.starts_with(short_id)
-                                        || change_offset != divergent) =>
-                            {
-                                true
-                            }
-                            None if !change_id.starts_with(id.as_str()) => true,
-                            _ => false,
-                        }) {
-                        true => Some(Duplicate::Range {
-                            start: start.clone(),
-                            end: end.clone(),
-                            to: id.clone(),
-                        }),
-                        false => None,
-                    }
-                }
+                }) => revisions_exclude_target(ids, &id).then(|| Duplicate::Range {
+                    start: start.clone(),
+                    end: end.clone(),
+                    to: id,
+                }),
                 None => None,
             };
         }
@@ -1030,7 +1129,7 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                 })
                 .detach();
 
-                // force update anyway
+                // NOTE: force update anyway
                 ctx.queue().push(Message::Refresh);
             }
         }
@@ -1081,6 +1180,21 @@ pub fn refresh(state: &mut MainState, ctx: &mut DefaultContext<Message, State>) 
     });
 }
 
+fn spawn_files_list(jj_handle: &JJHandle, ctx: &mut DefaultContext<Message, State>, id: SmolStr) {
+    let jj = jj_handle.clone();
+    ctx.queue()
+        .spawn_try(async move { jj.diff_sum(&id).await.map(LogMsg::UpdateFileList) });
+}
+
+fn spawn_files_tree(jj_handle: &JJHandle, ctx: &mut DefaultContext<Message, State>, id: SmolStr) {
+    let jj = jj_handle.clone();
+    ctx.queue().spawn_try(async move {
+        jj.diff_files(&id)
+            .await
+            .map(|raw| LogMsg::UpdateFileTree(CompactPathTree::new(&raw).unwrap_or_default()))
+    });
+}
+
 fn debounce_show(state: &mut MainState, id: SmolStr) {
     let jj = state.jj_handle.clone();
     state
@@ -1092,15 +1206,15 @@ fn debounce_show(state: &mut MainState, id: SmolStr) {
         });
 }
 
-fn debounce_diff(state: &mut MainState, id: SmolStr, status_file: SmolStr) {
+fn debounce_diff<S>(state: &mut MainState, id: SmolStr, status_file: S)
+where
+    S: AsRef<str> + 'static,
+{
     let jj = state.jj_handle.clone();
     state
         .log_diff_debounce_mut()
         .spawn_try(|version| async move {
-            let (status, file) = status_file
-                .split_once(' ')
-                .unwrap_or(("", status_file.as_str()));
-            jj.diff(&id, status, file)
+            jj.diff(&id, status_file.as_ref())
                 .await
                 .map(|text| LogMsg::UpdateDiff { text, version })
         });
@@ -1113,7 +1227,7 @@ fn close_rebase_list(state: &mut MainState) {
     state.log_modal_rebase_list_state.1.select(None);
 }
 
-fn can_rebase_onto(revisions: &str, target: &str) -> bool {
+fn revisions_exclude_target(revisions: &str, target: &str) -> bool {
     revisions
         .lines()
         .all(|revision| !revision_eq(revision, target))
@@ -1131,7 +1245,7 @@ fn revision_eq(lhs: &str, rhs: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{can_rebase_onto, revision_eq};
+    use super::{revision_eq, revisions_exclude_target};
 
     #[test]
     fn compares_regular_revisions_by_change_id_prefix() {
@@ -1154,21 +1268,40 @@ mod tests {
 
     #[test]
     fn allows_rebasing_divergent_revision_onto_regular_revision() {
-        assert!(can_rebase_onto("abcdefghijkl/0", "xyzuvw"));
+        assert!(revisions_exclude_target("abcdefghijkl/0", "xyzuvw"));
     }
 
     #[test]
     fn rejects_rebasing_onto_the_same_divergent_revision() {
-        assert!(!can_rebase_onto("abcdefghijkl/0", "abcdefgh/0"));
-        assert!(can_rebase_onto("abcdefghijkl/0", "abcdefgh/1"));
+        assert!(!revisions_exclude_target("abcdefghijkl/0", "abcdefgh/0"));
+        assert!(revisions_exclude_target("abcdefghijkl/0", "abcdefgh/1"));
     }
 
     #[test]
     fn rejects_range_containing_the_divergent_target_revision() {
         let revisions = "abcdefghijkl/0\nxyzuvwxyzuvw\n";
 
-        assert!(!can_rebase_onto(revisions, "abcdefgh/0"));
-        assert!(can_rebase_onto(revisions, "abcdefgh/1"));
-        assert!(can_rebase_onto(revisions, "mnopqrst"));
+        assert!(!revisions_exclude_target(revisions, "abcdefgh/0"));
+        assert!(revisions_exclude_target(revisions, "abcdefgh/1"));
+        assert!(revisions_exclude_target(revisions, "mnopqrst"));
+    }
+
+    #[test]
+    fn allows_duplicating_divergent_revision_onto_regular_revision() {
+        assert!(revisions_exclude_target("abcdefghijkl/0", "xyzuvw"));
+    }
+
+    #[test]
+    fn allows_duplicating_range_with_divergent_revision_onto_regular_revision() {
+        assert!(revisions_exclude_target(
+            "abcdefghijkl/0\nxyzuvwxyzuvw\n",
+            "mnopqrst"
+        ));
+    }
+
+    #[test]
+    fn rejects_duplicating_onto_same_divergent_revision() {
+        assert!(!revisions_exclude_target("abcdefghijkl/0", "abcdefgh/0"));
+        assert!(revisions_exclude_target("abcdefghijkl/0", "abcdefgh/1"));
     }
 }

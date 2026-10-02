@@ -4,15 +4,15 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ScrollbarParams, block, paragraph, scrollbar},
     core::*,
     event::DefaultContext,
     scroll::ScrollAction,
-    widget::{BorderType, ScrollbarParams, block, paragraph, scrollbar},
 };
 
 use crate::ui::{HelpMsg, MainState, Message, OpMsg, State};
 
-pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
+pub fn view<'a>(state: &'a mut MainState) -> impl Component<OpMsg> + 'a {
     let height = state.op_view.height();
     let position = state.op_state.scroll.0 as usize;
 
@@ -45,11 +45,11 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(state.op_area.clone()),
-                position,
+                viewport: state.op_area.clone().into(),
+                position: position.into(),
             }),
             {
                 let viewport = state.op_area.clone();
@@ -59,7 +59,6 @@ pub fn view<'a>(state: &'a mut MainState) -> Element<'a, OpMsg> {
                 }
             },
         )
-        .into()
 }
 
 pub fn update(state: &mut MainState, msg: OpMsg, ctx: &mut DefaultContext<Message, State>) {

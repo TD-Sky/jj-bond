@@ -3,9 +3,10 @@ use std::time::Duration;
 use futures_util::StreamExt;
 use ratatui::{crossterm::event::KeyCode, macros::constraints};
 use ratzgo::{
+    component::{column, stack},
     core::*,
     event::DefaultContext,
-    widget::{column, stack},
+    scroll::ScrollPosition,
 };
 
 use crate::{
@@ -26,6 +27,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
 
     match Config::load_or_default() {
         Ok(v) => {
+            state.main.log_files_view = v.log_files_view;
             state.config = v;
         }
         Err(e) => {
@@ -54,6 +56,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
         .tags_history_debounce
         .set(ctx.make_debounce(debounce_duration))
         .expect("tags history debounce must only be initialized once");
+    state.main.log_file_tree_state.position = ScrollPosition::Ref(Default::default());
 
     match NotifyGitChange::new(state.main.jj_handle.clone()) {
         Ok(notify) => {
@@ -79,7 +82,7 @@ pub async fn init(state: &mut State, ctx: &mut DefaultContext<Message, State>) {
     ctx.queue().push(Message::Refresh);
 }
 
-pub fn view(state: &mut State) -> Element<'_, Message> {
+pub fn view(state: &mut State) -> Box<dyn Component<Message> + '_> {
     let hint_vstate = hint::State {
         fetching: state.main.log_fetching.clone(),
         pushing: state.main.log_pushing.clone(),
@@ -90,12 +93,12 @@ pub fn view(state: &mut State) -> Element<'_, Message> {
         column! [
             constraints![==3, ==100%, ==3];
             [
-                nav::view(state.main.nav_tab).into().map(Into::into),
+                nav::view(state.main.nav_tab).map(Into::into),
                 match state.main.nav_tab {
-                    Tab::Log => log::view(&mut state.main).map(Into::into),
-                    Tab::Bookmarks => bookmarks::view(&mut state.main).map(Into::into),
-                    Tab::Tags => tags::view(&mut state.main).map(Into::into),
-                    Tab::Operations => operations::view(&mut state.main).map(Into::into),
+                    Tab::Log => log::view(&mut state.main).map(Into::into).boxed(),
+                    Tab::Bookmarks => bookmarks::view(&mut state.main).map(Into::into).boxed(),
+                    Tab::Tags => tags::view(&mut state.main).map(Into::into).boxed(),
+                    Tab::Operations => operations::view(&mut state.main).map(Into::into).boxed(),
                 },
                 hint::view(hint_vstate)
             ]
@@ -124,7 +127,10 @@ pub fn view(state: &mut State) -> Element<'_, Message> {
         help::view(&mut state.help),
         notification::view(&state.notify),
     ]
-    .into()
+    // NOTE: Windows will capture key release events,
+    //       jj-bond doesn't need them.
+    .filter_key(|k| !k.is_release())
+    .boxed()
 }
 
 pub async fn update(state: &mut State, msg: Message, ctx: &mut DefaultContext<Message, State>) {

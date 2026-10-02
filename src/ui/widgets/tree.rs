@@ -6,13 +6,10 @@ use std::{
     rc::Rc,
 };
 
-use ratatui::{
-    crossterm::event::KeyEvent,
-    prelude::{StatefulWidget as _, *},
-};
+use ratatui::{crossterm::event::KeyEvent, prelude::*};
 use ratzgo::{
-    core::{Widget, *},
-    scroll::ScrollAction,
+    core::*,
+    scroll::{ScrollAction, ScrollPosition},
 };
 use tui_tree_widget::TreeItem;
 
@@ -46,7 +43,7 @@ impl<'a, I, Message> Tree<'a, I, Message> {
     }
 }
 
-impl<'a, I, Message> Widget<Message> for Tree<'a, I, Message>
+impl<'a, I, Message> Component<Message> for Tree<'a, I, Message>
 where
     I: std::fmt::Debug + Clone + PartialEq + Eq + Hash,
     Message: std::fmt::Debug,
@@ -72,13 +69,16 @@ where
             &mut self.base,
             tui_tree_widget::Tree::<I>::new(&[]).expect("default tree"),
         );
-        tree.render(self.state.area.get(), buf, &mut self.state.base);
+        StatefulWidget::render(tree, self.state.area.get(), buf, &mut self.state.base);
+
+        let offset = self.state.base.get_offset();
+        self.state.position.set(offset);
     }
 }
 
 impl<'a, I, Message> BindArea for Tree<'a, I, Message> {
     fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
-        self.state.area = Area::Ref(area.clone());
+        self.state.area = area.into();
         self
     }
 }
@@ -95,20 +95,11 @@ impl<'a, I, Message> OnKeyBuilder<'a, Message> for Tree<'a, I, Message> {
     }
 }
 
-impl<'a, I, Message> From<Tree<'a, I, Message>> for Element<'a, Message>
-where
-    I: std::fmt::Debug + Clone + PartialEq + Eq + Hash,
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Tree<'a, I, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct TreeState<I> {
     base: tui_tree_widget::TreeState<I>,
     pub area: Area,
+    pub position: ScrollPosition,
 }
 
 impl<I> Deref for TreeState<I> {
@@ -129,6 +120,15 @@ impl<I> TreeState<I>
 where
     I: Clone + PartialEq + Eq + Hash,
 {
+    pub fn open_all(&mut self, items: &[TreeItem<'_, I>]) {
+        self.base.close_all();
+
+        let mut path = vec![];
+        for item in items {
+            self.open_item(item, &mut path);
+        }
+    }
+
     pub fn scroll_lines(&mut self, action: ScrollAction) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,
@@ -142,5 +142,24 @@ where
         });
 
         self.base.scroll_selected_into_view();
+    }
+}
+
+impl<I> TreeState<I>
+where
+    I: Clone + PartialEq + Eq + Hash,
+{
+    fn open_item(&mut self, item: &TreeItem<'_, I>, path: &mut Vec<I>) {
+        path.push(item.identifier().clone());
+
+        if !item.children().is_empty() {
+            self.base.open(path.clone());
+
+            for child in item.children() {
+                self.open_item(child, path);
+            }
+        }
+
+        path.pop();
     }
 }

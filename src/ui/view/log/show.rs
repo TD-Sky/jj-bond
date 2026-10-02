@@ -5,8 +5,8 @@ use ratatui::{
     text::Text,
 };
 use ratzgo::{
+    component::{BorderType, ParagraphState, ScrollbarParams, block, paragraph, scrollbar},
     core::*,
-    widget::{BorderType, ParagraphState, ScrollbarParams, block, paragraph, scrollbar},
 };
 
 use crate::ui::LogMsg;
@@ -18,7 +18,7 @@ pub struct VState<'a> {
     pub view: Text<'a>,
 }
 
-pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Into<Element<'a, LogMsg>> {
+pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Component<LogMsg> + 'a {
     let height = view.height();
     let position = state.scroll.0 as usize;
 
@@ -27,11 +27,11 @@ pub fn view<'a>(VState { state, area, view }: VState<'a>) -> impl Into<Element<'
     block(inner)
         .bordered()
         .border_type(BorderType::Rounded)
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position,
+                viewport: area.into(),
+                position: position.into(),
             }),
             {
                 let viewport = area.clone();

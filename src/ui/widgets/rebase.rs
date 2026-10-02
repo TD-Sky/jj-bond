@@ -5,9 +5,9 @@ use ratatui::{
     text::{Line, Text},
 };
 use ratzgo::{
+    component::{BorderType, Borders, ListState, block, column, line, list, row},
     core::*,
     scroll::ScrollAction,
-    widget::{BorderType, Borders, ListState, block, column, line, list, row},
 };
 
 use crate::ui::LogMsg;
@@ -27,7 +27,7 @@ pub fn view<'a>(
         to_state,
         from,
     }: VState<'a>,
-) -> impl Into<Element<'a, LogMsg>> {
+) -> impl Component<LogMsg> + 'a {
     let mut from_view = view.clone();
     if let Some(selected) = from {
         for line in &mut from_view.lines {
@@ -102,7 +102,7 @@ pub fn view<'a>(
         ]
     ];
 
-    let inner: Element<LogMsg> = row! [
+    let inner = row! [
         constraints![*=1, *=1];
         [from_list, to_list]
     ]
@@ -129,8 +129,7 @@ pub fn view<'a>(
             _ => return None,
         };
         Some(msg)
-    })
-    .into();
+    });
 
     block(inner)
         .bordered()

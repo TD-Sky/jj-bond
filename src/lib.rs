@@ -80,10 +80,12 @@ pub mod utils {
     }
     pub mod tui {
         mod log;
+        mod path_tree;
         mod text;
         mod tree;
 
         pub use log::*;
+        pub use path_tree::*;
         pub use text::*;
         pub use tree::*;
     }

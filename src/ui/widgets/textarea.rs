@@ -3,11 +3,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use ratatui::{
-    crossterm::event::KeyEvent,
-    prelude::{Widget as _, *},
-};
-use ratzgo::core::{Widget, *};
+use ratatui::{crossterm::event::KeyEvent, prelude::*};
+use ratzgo::core::*;
 
 pub struct TextArea<'a, Message> {
     state: &'a mut TextAreaState,
@@ -47,6 +44,7 @@ impl<'a, Message> TextArea<'a, Message> {
         }
     }
 
+    #[expect(unused)]
     pub fn decorate<F>(self, f: F) -> Self
     where
         F: FnOnce(&mut ratatui_textarea::TextArea<'static>),
@@ -64,7 +62,7 @@ impl<'a, Message> TextArea<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for TextArea<'a, Message>
+impl<'a, Message> Component<Message> for TextArea<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -102,15 +100,6 @@ impl<'a, Message> Activable for TextArea<'a, Message> {
 impl<'a, Message> OnKeyBuilder<'a, Message> for TextArea<'a, Message> {
     fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
         &mut self.on_key
-    }
-}
-
-impl<'a, Message> From<TextArea<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: TextArea<'a, Message>) -> Self {
-        Self::new(widget)
     }
 }
 

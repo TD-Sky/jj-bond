@@ -1,2 +1,5 @@
 # try fetch from remotes at launch
 launch_fetch = true
+
+# view of the Log-files pane, one of ["list", "tree"]
+log_files_view = "tree"

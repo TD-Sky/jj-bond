@@ -5,7 +5,7 @@ use ratatui::{
     layout::Rect,
     prelude::Buffer,
     style::{Color, Modifier},
-    widgets::{Paragraph, Widget as _},
+    widgets::{Paragraph, Widget},
 };
 use ratzgo::{
     core::*,
@@ -38,7 +38,7 @@ impl<'a, Message> LogHistory<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for LogHistory<'a, Message>
+impl<'a, Message> Component<Message> for LogHistory<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -257,20 +257,25 @@ impl LogHistoryState {
 
         Some(change)
     }
-}
 
-impl<'a, Message> From<LogHistory<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: LogHistory<'a, Message>) -> Self {
-        Element::new(widget)
+    pub fn scroll_vertical_fit(&mut self, log: &LogText) {
+        let Some(change) = log.beacons().get(self.hovered()) else {
+            return;
+        };
+
+        self.scroll.0 = repos_y_anchored(
+            self.scroll.0,
+            log.text().height(),
+            self.area.get().height,
+            4,
+            change.range_line.start,
+        );
     }
 }
 
 impl<'a, Message> BindArea for LogHistory<'a, Message> {
     fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
-        self.state.area = Area::Ref(area.clone());
+        self.state.area = area.into();
         self
     }
 }

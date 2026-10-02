@@ -6,9 +6,10 @@ use std::{
 use bytestring::ByteString;
 use ratatui::layout::Rect;
 use ratzgo::{
+    component::{ListState, MountPoint, ParagraphState},
     event::UnsyncDebounce,
-    widget::{ListState, MountPoint, ParagraphState},
 };
+use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use thin_cell::unsync::ThinCell;
 
@@ -26,7 +27,7 @@ use crate::{
     },
     utils::{
         jj::{Abandon, Duplicate, JJHandle, LogMode, Rebase, Split, Squash},
-        tui::{BoxText, LogText, TreeText},
+        tui::{BoxText, CompactPathTree, LogText, TreeText},
     },
 };
 
@@ -49,13 +50,17 @@ pub struct MainState {
     pub log_history: LogText,
     pub log_history_state: LogHistoryState,
     pub log_history_area: Rc<Cell<Rect>>,
+    pub log_history_should_fit: bool,
     pub log_show_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub log_show_state: ParagraphState,
     pub log_show_view: BoxText,
     pub log_show_area: Rc<Cell<Rect>>,
-    pub log_files_state: ListState,
+    pub log_files_view: FilesView,
+    pub log_file_list_state: ListState,
+    pub log_file_list_view: BoxText,
+    pub log_file_tree_view: CompactPathTree,
+    pub log_file_tree_state: TreeState<ByteString>,
     pub log_files_area: Rc<Cell<Rect>>,
-    pub log_files_view: BoxText,
     pub log_diff_debounce: OnceCell<UnsyncDebounce<Message>>,
     pub log_diff_state: ParagraphState,
     pub log_diff_area: Rc<Cell<Rect>>,
@@ -153,6 +158,14 @@ impl MainState {
             .get_mut()
             .expect("`OnceCell` must be init")
     }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FilesView {
+    List,
+    #[default]
+    Tree,
 }
 
 #[derive(Debug, Default, Clone)]

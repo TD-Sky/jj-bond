@@ -9,10 +9,10 @@ use ratatui::{
     widgets::Padding,
 };
 use ratzgo::{
+    component::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
     core::*,
     scroll::ScrollAction,
     text::Line,
-    widget::{BorderType, ListState, MountPoint, ScrollbarParams, block, list, scrollbar},
 };
 
 use crate::{
@@ -82,7 +82,7 @@ pub fn view<'a>(
         modal_redo,
         modal_unsync,
     }: VState<'a>,
-) -> impl Into<Element<'a, LogMsg>> {
+) -> impl Component<LogMsg> + 'a {
     let hover = state.hovered();
     let offset = state.offset();
     let height = view.text().height();
@@ -124,7 +124,6 @@ pub fn view<'a>(
                 to_state,
                 from: modal_rebase_from,
             })
-            .into()
             .map(Into::into),
             |area| area.centered(constraint!(==50%), constraint!(==50%)),
         );
@@ -373,11 +372,11 @@ pub fn view<'a>(
         .bordered()
         .border_type(BorderType::Rounded)
         .decorate(|v| v.padding(Padding::horizontal(1)))
-        .widget_right_opt(
+        .right_component_opt(
             scrollbar(ScrollbarParams {
                 content_length: height,
-                viewport: Area::Ref(area.clone()),
-                position: offset,
+                viewport: area.into(),
+                position: offset.into(),
             }),
             {
                 let viewport = area.clone();
