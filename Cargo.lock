@@ -2216,7 +2216,7 @@ dependencies = [
 
 [[package]]
 name = "jj-bond"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "ahash",
  "ansi-to-tui",
