@@ -20,7 +20,7 @@ use crate::{
     },
     utils::{
         jj::{Abandon, Duplicate, JJHandle, LogMode, Rebase, Squash},
-        tui::{BoxText, LogText, PathTree},
+        tui::{BoxText, CompactPathTree, LogText},
     },
 };
 
@@ -1191,7 +1191,7 @@ fn spawn_files_tree(jj_handle: &JJHandle, ctx: &mut DefaultContext<Message, Stat
     ctx.queue().spawn_try(async move {
         jj.diff_files(&id)
             .await
-            .map(|raw| LogMsg::UpdateFileTree(PathTree::new(&raw).unwrap_or_default()))
+            .map(|raw| LogMsg::UpdateFileTree(CompactPathTree::new(&raw).unwrap_or_default()))
     });
 }
 

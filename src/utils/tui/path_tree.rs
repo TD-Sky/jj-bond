@@ -9,7 +9,7 @@ use ratatui::{
 use tui_tree_widget::TreeItem;
 
 #[derive(Debug, Default)]
-pub struct PathTree {
+pub struct CompactPathTree {
     base: Vec<TreeItem<'static, ByteString>>,
     set: HashSet<ByteString>,
 }
@@ -27,7 +27,7 @@ struct Node<'a> {
     level: usize,
 }
 
-impl PathTree {
+impl CompactPathTree {
     pub fn new(raw: &[u8]) -> Result<Self, Utf8Error> {
         let mut set = HashSet::default();
 

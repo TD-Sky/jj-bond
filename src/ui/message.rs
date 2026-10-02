@@ -9,7 +9,7 @@ use crate::{
     },
     utils::{
         jj::Split,
-        tui::{LogText, PathTree, TreeText},
+        tui::{CompactPathTree, LogText, TreeText},
     },
 };
 
@@ -38,7 +38,7 @@ pub enum LogMsg {
     UpdateHistory(LogText),
     UpdateShow { text: Vec<u8>, version: u32 },
     UpdateFileList(Vec<u8>),
-    UpdateFileTree(PathTree),
+    UpdateFileTree(CompactPathTree),
     UpdateDiff { text: Vec<u8>, version: u32 },
     Layout(LogLayout),
     FilesViewSelect(FilesView),

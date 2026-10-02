@@ -27,7 +27,7 @@ use crate::{
     },
     utils::{
         jj::{Abandon, Duplicate, JJHandle, LogMode, Rebase, Split, Squash},
-        tui::{BoxText, LogText, PathTree, TreeText},
+        tui::{BoxText, CompactPathTree, LogText, TreeText},
     },
 };
 
@@ -58,7 +58,7 @@ pub struct MainState {
     pub log_files_view: FilesView,
     pub log_file_list_state: ListState,
     pub log_file_list_view: BoxText,
-    pub log_file_tree_view: PathTree,
+    pub log_file_tree_view: CompactPathTree,
     pub log_file_tree_state: TreeState<ByteString>,
     pub log_files_area: Rc<Cell<Rect>>,
     pub log_diff_debounce: OnceCell<UnsyncDebounce<Message>>,

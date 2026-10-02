@@ -22,7 +22,7 @@ use crate::{
         view::log::{LogFocus, LogLayout},
         widgets::{Tree, TreeState},
     },
-    utils::tui::PathTree,
+    utils::tui::CompactPathTree,
 };
 
 const TABS: [&str; 2] = ["list", "tree"];
@@ -34,7 +34,7 @@ pub struct VState<'a> {
     pub log_focus: &'a LogFocus,
     pub view: Text<'a>,
     pub tab: FilesView,
-    pub tree_view: &'a PathTree,
+    pub tree_view: &'a CompactPathTree,
     pub tree_state: &'a mut TreeState<ByteString>,
     pub id: Option<&'a str>,
 }
@@ -60,7 +60,7 @@ pub fn view<'a>(
         FilesView::Tree => tree_state.position.clone(),
     };
 
-    let inner: Box<dyn Component<LogMsg> + 'a> = match tab {
+    let inner = match tab {
         FilesView::List => list(state, area, log_focus, view).boxed(),
         FilesView::Tree => tree(tree_state, tree_view, area, log_focus).boxed(),
     };
@@ -164,7 +164,7 @@ fn list<'a>(
 
 fn tree<'a>(
     state: &'a mut TreeState<ByteString>,
-    view: &'a PathTree,
+    view: &'a CompactPathTree,
     area: &'a Rc<Cell<Rect>>,
     log_focus: &'a LogFocus,
 ) -> impl Component<LogMsg> + 'a {
