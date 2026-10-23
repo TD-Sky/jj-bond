@@ -1,5 +1,3 @@
-use clap::Parser;
-
 const VERSION: &str = constcat::concat!(
     env!("CARGO_PKG_VERSION"),
     " (",
@@ -13,6 +11,6 @@ const VERSION: &str = constcat::concat!(
 );
 
 /// jujutsu TUI
-#[derive(Debug, Parser)]
-#[command(version = VERSION, about)]
+#[derive(Debug, usage_rs::Cli)]
+#[usage(bin = "jb", version = VERSION, about)]
 pub struct Cli {}
