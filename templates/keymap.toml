@@ -3,14 +3,14 @@ global = [
   { key = "2", desc = "select Bookmarks tab" },
   { key = "3", desc = "select Tags tab" },
   { key = "4", desc = "select Operations tab" },
-  { key = "H", desc = "previous tab" },
-  { key = "L", desc = "next tab" },
+  { key = "H / <Left>", desc = "previous tab" },
+  { key = "L / <Right>", desc = "next tab" },
   { key = "q", desc = "quit" }
 ]
 
 log-history = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<C-d>", desc = "scroll down 50%" },
   { key = "<C-u>", desc = "scroll up 50%" },
   { key = "<C-f>", desc = "page down" },
@@ -36,14 +36,14 @@ log-history = [
 ]
 
 log-history-show = [
-  { key = "k", desc = "history up" },
-  { key = "j", desc = "history down" },
+  { key = "k / <Up>", desc = "history up" },
+  { key = "j / <Down>", desc = "history down" },
   { key = "<C-d>", desc = "history scroll down 50%" },
   { key = "<C-u>", desc = "history scroll up 50%" },
   { key = "<C-f>", desc = "history page down" },
   { key = "<C-b>", desc = "history page up" },
-  { key = "K", desc = "show scroll up" },
-  { key = "J", desc = "show scroll down" },
+  { key = "K / <S-Up>", desc = "show scroll up" },
+  { key = "J / <S-Down>", desc = "show scroll down" },
   { key = "<Enter>", desc = "open files|diff" },
   { key = "<Esc>", desc = "back to history" },
   { key = "n", desc = "new child change" },
@@ -65,25 +65,25 @@ log-history-show = [
 ]
 
 log-files-diff = [
-  { key = "k", desc = "file up" },
-  { key = "j", desc = "file down" },
+  { key = "k / <Up>", desc = "file up" },
+  { key = "j / <Down>", desc = "file down" },
   { key = "<C-d>", desc = "files scroll down 50%" },
   { key = "<C-u>", desc = "files scroll up 50%" },
   { key = "<C-f>", desc = "files page down" },
   { key = "<C-b>", desc = "files page up" },
   { key = "<Tab>", desc = "switch list/tree" },
-  { key = "<h>", desc = "tree collapse" },
-  { key = "<l>", desc = "tree expand" },
+  { key = "h / <Left>", desc = "tree collapse" },
+  { key = "l / <Right>", desc = "tree expand" },
   { key = "<Enter>", desc = "open diff" },
   { key = "<Esc>", desc = "back to history|show" },
   { key = "?", desc = "help" }
 ]
 
 log-diff = [
-  { key = "k", desc = "diff scroll up" },
-  { key = "j", desc = "diff scroll down" },
-  { key = "h", desc = "diff scroll left" },
-  { key = "l", desc = "diff scroll right" },
+  { key = "k / <Up>", desc = "diff scroll up" },
+  { key = "j / <Down>", desc = "diff scroll down" },
+  { key = "h / <Left>", desc = "diff scroll left" },
+  { key = "l / <Right>", desc = "diff scroll right" },
   { key = "<C-d>", desc = "diff scroll down 50%" },
   { key = "<C-u>", desc = "diff scroll up 50%" },
   { key = "<C-f>", desc = "diff page down" },
@@ -93,8 +93,8 @@ log-diff = [
 ]
 
 log-rebase-list = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<C-d>", desc = "scroll down 50%" },
   { key = "<C-u>", desc = "scroll up 50%" },
   { key = "<C-f>", desc = "page down" },
@@ -105,8 +105,8 @@ log-rebase-list = [
 ]
 
 log-tag-list = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<Enter>", desc = "select / create tag" },
   { key = "<Esc>", desc = "close list / cancel input" },
   { key = "<Backspace>", desc = "delete input char" },
@@ -114,14 +114,16 @@ log-tag-list = [
   { key = "<C-u>", desc = "scroll up 50% / clear input" },
   { key = "<C-b>", desc = "page up / cursor left" },
   { key = "<C-f>", desc = "page down / cursor right" },
+  { key = "<Left>", desc = "input cursor left" },
+  { key = "<Right>", desc = "input cursor right" },
   { key = "<C-a>", desc = "cursor to start" },
   { key = "<C-e>", desc = "cursor to end" },
   { key = "?", desc = "help" }
 ]
 
 log-bookmark-list = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<Enter>", desc = "select / create bookmark" },
   { key = "<Esc>", desc = "close list / cancel input" },
   { key = "<Backspace>", desc = "delete input char" },
@@ -129,6 +131,8 @@ log-bookmark-list = [
   { key = "<C-u>", desc = "scroll up 50% / clear input" },
   { key = "<C-b>", desc = "page up / cursor left" },
   { key = "<C-f>", desc = "page down / cursor right" },
+  { key = "<Left>", desc = "input cursor left" },
+  { key = "<Right>", desc = "input cursor right" },
   { key = "<C-a>", desc = "cursor to start" },
   { key = "<C-e>", desc = "cursor to end" },
   { key = "?", desc = "help" }
@@ -142,8 +146,8 @@ confirm-modal = [
 ]
 
 log-unsync = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<C-d>", desc = "scroll down 50%" },
   { key = "<C-u>", desc = "scroll up 50%" },
   { key = "<C-f>", desc = "page down" },
@@ -154,8 +158,8 @@ log-unsync = [
 ]
 
 bookmarks-remotes = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<C-d>", desc = "scroll down 50%" },
   { key = "<C-u>", desc = "scroll up 50%" },
   { key = "<C-f>", desc = "page down" },
@@ -166,16 +170,16 @@ bookmarks-remotes = [
 ]
 
 bookmarks-tree = [
-  { key = "k", desc = "tree up" },
-  { key = "j", desc = "tree down" },
+  { key = "k / <Up>", desc = "tree up" },
+  { key = "j / <Down>", desc = "tree down" },
   { key = "<C-d>", desc = "tree scroll down 50%" },
   { key = "<C-u>", desc = "tree scroll up 50%" },
   { key = "<C-f>", desc = "tree page down" },
   { key = "<C-b>", desc = "tree page up" },
-  { key = "l", desc = "open bookmark node" },
-  { key = "h", desc = "close bookmark node" },
-  { key = "K", desc = "history scroll up" },
-  { key = "J", desc = "history scroll down" },
+  { key = "l / <Right>", desc = "open bookmark node" },
+  { key = "h / <Left>", desc = "close bookmark node" },
+  { key = "K / <S-Up>", desc = "history scroll up" },
+  { key = "J / <S-Down>", desc = "history scroll down" },
   { key = "t", desc = "track bookmark" },
   { key = "u", desc = "untrack bookmark" },
   { key = "d", desc = "delete bookmark" },
@@ -184,16 +188,16 @@ bookmarks-tree = [
 ]
 
 tags-tree = [
-  { key = "k", desc = "tree up" },
-  { key = "j", desc = "tree down" },
+  { key = "k / <Up>", desc = "tree up" },
+  { key = "j / <Down>", desc = "tree down" },
   { key = "<C-d>", desc = "tree scroll down 50%" },
   { key = "<C-u>", desc = "tree scroll up 50%" },
   { key = "<C-f>", desc = "tree page down" },
   { key = "<C-b>", desc = "tree page up" },
-  { key = "l", desc = "open tag node" },
-  { key = "h", desc = "close tag node" },
-  { key = "K", desc = "history scroll up" },
-  { key = "J", desc = "history scroll down" },
+  { key = "l / <Right>", desc = "open tag node" },
+  { key = "h / <Left>", desc = "close tag node" },
+  { key = "K / <S-Up>", desc = "history scroll up" },
+  { key = "J / <S-Down>", desc = "history scroll down" },
   { key = "d", desc = "delete tag" },
   { key = "p", desc = "push tag" },
   { key = "<Enter>", desc = "view history in Log tab" },
@@ -201,8 +205,8 @@ tags-tree = [
 ]
 
 tags-remotes = [
-  { key = "k", desc = "up" },
-  { key = "j", desc = "down" },
+  { key = "k / <Up>", desc = "up" },
+  { key = "j / <Down>", desc = "down" },
   { key = "<C-d>", desc = "scroll down 50%" },
   { key = "<C-u>", desc = "scroll up 50%" },
   { key = "<C-f>", desc = "page down" },
@@ -213,8 +217,8 @@ tags-remotes = [
 ]
 
 operations = [
-  { key = "k", desc = "scroll up" },
-  { key = "j", desc = "scroll down" },
+  { key = "k / <Up>", desc = "scroll up" },
+  { key = "j / <Down>", desc = "scroll down" },
   { key = "<C-d>", desc = "scroll down 50%" },
   { key = "<C-u>", desc = "scroll up 50%" },
   { key = "<C-f>", desc = "page down" },
@@ -222,4 +226,4 @@ operations = [
   { key = "?", desc = "help" }
 ]
 
-help = [{ key = "k", desc = "up" }, { key = "j", desc = "down" }]
+help = [{ key = "k / <Up>", desc = "up" }, { key = "j / <Down>", desc = "down" }]

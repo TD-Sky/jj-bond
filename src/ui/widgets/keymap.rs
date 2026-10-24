@@ -70,8 +70,8 @@ pub fn keymap<'a>(
         })
         .on_key_with(|k| {
             let msg = match k.code {
-                KeyCode::Char('j') => HelpMsg::Scroll(ScrollAction::Fixed(1)),
-                KeyCode::Char('k') => HelpMsg::Scroll(ScrollAction::Fixed(-1)),
+                KeyCode::Char('j') | KeyCode::Down => HelpMsg::Scroll(ScrollAction::Fixed(1)),
+                KeyCode::Char('k') | KeyCode::Up => HelpMsg::Scroll(ScrollAction::Fixed(-1)),
                 KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                     HelpMsg::Scroll(ScrollAction::Viewport(50))
                 }

@@ -729,6 +729,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                             ratzgo::log::error("`bookmark create`", e.into_text());
                         }
                     }
+                    KeyCode::Left => input.move_cursor(CursorMove::Back),
+                    KeyCode::Right => input.move_cursor(CursorMove::Forward),
                     KeyCode::Esc => {
                         state.log_modal_bookmark_list_state.1.take();
                     }
@@ -1063,6 +1065,8 @@ pub async fn update(state: &mut MainState, msg: LogMsg, ctx: &mut DefaultContext
                             ratzgo::log::error("`tag set`", e.into_text());
                         }
                     }
+                    KeyCode::Left => input.move_cursor(CursorMove::Back),
+                    KeyCode::Right => input.move_cursor(CursorMove::Forward),
                     KeyCode::Esc => {
                         state.log_modal_tag_list_state.1.take();
                     }

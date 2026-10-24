@@ -128,11 +128,11 @@ fn list<'a>(
         .active(log_focus.is_files())
         .decorate(|v| v.highlight_style(Style::new().add_modifier(Modifier::REVERSED)))
         .on_key(
-            |k| k.code == KeyCode::Char('j'),
+            |k| matches!(k.code, KeyCode::Char('j') | KeyCode::Down),
             LogMsg::ScrollFileList(ScrollAction::Fixed(1)),
         )
         .on_key(
-            |k| k.code == KeyCode::Char('k'),
+            |k| matches!(k.code, KeyCode::Char('k') | KeyCode::Up),
             LogMsg::ScrollFileList(ScrollAction::Fixed(-1)),
         )
         .on_key(
@@ -173,11 +173,11 @@ fn tree<'a>(
         .active(log_focus.is_files())
         .decorate(|v| v.highlight_style(Style::new().add_modifier(Modifier::REVERSED)))
         .on_key(
-            |k| k.code == KeyCode::Char('j'),
+            |k| matches!(k.code, KeyCode::Char('j') | KeyCode::Down),
             LogMsg::ScrollFileTree(ScrollAction::Fixed(1)),
         )
         .on_key(
-            |k| k.code == KeyCode::Char('k'),
+            |k| matches!(k.code, KeyCode::Char('k') | KeyCode::Up),
             LogMsg::ScrollFileTree(ScrollAction::Fixed(-1)),
         )
         .on_key(
@@ -196,8 +196,14 @@ fn tree<'a>(
             |k| k.code == KeyCode::Char('b') && k.modifiers == KeyModifiers::CONTROL,
             LogMsg::ScrollFileTree(ScrollAction::Viewport(-100)),
         )
-        .on_key(|k| k.code == KeyCode::Char('l'), LogMsg::FileTreeOpen)
-        .on_key(|k| k.code == KeyCode::Char('h'), LogMsg::FileTreeClose)
+        .on_key(
+            |k| matches!(k.code, KeyCode::Char('l') | KeyCode::Right),
+            LogMsg::FileTreeOpen,
+        )
+        .on_key(
+            |k| matches!(k.code, KeyCode::Char('h') | KeyCode::Left),
+            LogMsg::FileTreeClose,
+        )
         .on_key(
             |k| k.code == KeyCode::Enter,
             LogMsg::Layout(LogLayout::DIFF),

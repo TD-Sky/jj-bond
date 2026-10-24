@@ -21,8 +21,8 @@ pub fn view<'a>(state: &'a mut MainState) -> impl Component<OpMsg> + 'a {
         .active(true)
         .on_key_with(|k| {
             let msg = match k.code {
-                KeyCode::Char('k') => OpMsg::Scroll(ScrollAction::Fixed(-1)),
-                KeyCode::Char('j') => OpMsg::Scroll(ScrollAction::Fixed(1)),
+                KeyCode::Char('k') | KeyCode::Up => OpMsg::Scroll(ScrollAction::Fixed(-1)),
+                KeyCode::Char('j') | KeyCode::Down => OpMsg::Scroll(ScrollAction::Fixed(1)),
                 KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                     OpMsg::Scroll(ScrollAction::Viewport(50))
                 }

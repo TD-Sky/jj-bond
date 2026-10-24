@@ -89,11 +89,11 @@ pub fn view<'a>(
             LogMsg::Layout(LogLayout::FILES_DIFF),
         )
         .on_key(
-            |k| k.code == KeyCode::Char('j'),
+            |k| matches!(k.code, KeyCode::Char('j') | KeyCode::Down),
             LogMsg::ScrollDiff(ScrollAction::Fixed(1)),
         )
         .on_key(
-            |k| k.code == KeyCode::Char('k'),
+            |k| matches!(k.code, KeyCode::Char('k') | KeyCode::Up),
             LogMsg::ScrollDiff(ScrollAction::Fixed(-1)),
         )
         .on_key(
@@ -113,11 +113,11 @@ pub fn view<'a>(
             LogMsg::ScrollDiff(ScrollAction::Viewport(-100)),
         )
         .on_key(
-            |k| k.code == KeyCode::Char('h'),
+            |k| matches!(k.code, KeyCode::Char('h') | KeyCode::Left),
             LogMsg::ScrollHDiff(ScrollAction::Viewport(-25)),
         )
         .on_key(
-            |k| k.code == KeyCode::Char('l'),
+            |k| matches!(k.code, KeyCode::Char('l') | KeyCode::Right),
             LogMsg::ScrollHDiff(ScrollAction::Viewport(25)),
         )
         .on_key(|k| k.code == KeyCode::Char('?'), LogMsg::Help);

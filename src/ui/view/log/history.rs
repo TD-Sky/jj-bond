@@ -227,8 +227,12 @@ pub fn view<'a>(
             .active(true)
             .on_key_with(|k| {
                 let msg = match k.code {
-                    KeyCode::Char('k') => LogMsg::ScrollUnsync(ScrollAction::Fixed(-1)),
-                    KeyCode::Char('j') => LogMsg::ScrollUnsync(ScrollAction::Fixed(1)),
+                    KeyCode::Char('k') | KeyCode::Up => {
+                        LogMsg::ScrollUnsync(ScrollAction::Fixed(-1))
+                    }
+                    KeyCode::Char('j') | KeyCode::Down => {
+                        LogMsg::ScrollUnsync(ScrollAction::Fixed(1))
+                    }
                     KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                         LogMsg::ScrollUnsync(ScrollAction::Viewport(50))
                     }
@@ -264,8 +268,20 @@ pub fn view<'a>(
         .active(log_focus.is_history())
         .on_key_with(move |k| {
             let msg = match k.code {
-                KeyCode::Char('k') => LogMsg::ScrollHistory(ScrollAction::Fixed(-1)),
-                KeyCode::Char('j') => LogMsg::ScrollHistory(ScrollAction::Fixed(1)),
+                KeyCode::Char('K') | KeyCode::Up
+                    if k.modifiers == KeyModifiers::SHIFT
+                        && *log_layout == LogLayout::HISTORY_FILES =>
+                {
+                    LogMsg::ScrollShow(ScrollAction::Viewport(-25))
+                }
+                KeyCode::Char('J') | KeyCode::Down
+                    if k.modifiers == KeyModifiers::SHIFT
+                        && *log_layout == LogLayout::HISTORY_FILES =>
+                {
+                    LogMsg::ScrollShow(ScrollAction::Viewport(25))
+                }
+                KeyCode::Char('k') | KeyCode::Up => LogMsg::ScrollHistory(ScrollAction::Fixed(-1)),
+                KeyCode::Char('j') | KeyCode::Down => LogMsg::ScrollHistory(ScrollAction::Fixed(1)),
                 KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                     LogMsg::ScrollHistory(ScrollAction::Viewport(50))
                 }
@@ -310,18 +326,6 @@ pub fn view<'a>(
                     if *log_mode != LogMode::Default && *log_layout == LogLayout::HISTORY =>
                 {
                     LogMsg::ResetMode
-                }
-                KeyCode::Char('K')
-                    if k.modifiers == KeyModifiers::SHIFT
-                        && *log_layout == LogLayout::HISTORY_FILES =>
-                {
-                    LogMsg::ScrollShow(ScrollAction::Viewport(-25))
-                }
-                KeyCode::Char('J')
-                    if k.modifiers == KeyModifiers::SHIFT
-                        && *log_layout == LogLayout::HISTORY_FILES =>
-                {
-                    LogMsg::ScrollShow(ScrollAction::Viewport(25))
                 }
                 KeyCode::Char('n') if let Some(change) = view.beacons().get(hover) => LogMsg::New {
                     parent: change.id.clone(),
