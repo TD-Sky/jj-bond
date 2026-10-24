@@ -108,8 +108,8 @@ pub fn view<'a>(
     ]
     .on_key_with(move |key| {
         let msg = match key.code {
-            KeyCode::Char('k') => LogMsg::RebaseListScroll(ScrollAction::Fixed(-1)),
-            KeyCode::Char('j') => LogMsg::RebaseListScroll(ScrollAction::Fixed(1)),
+            KeyCode::Char('k') | KeyCode::Up => LogMsg::RebaseListScroll(ScrollAction::Fixed(-1)),
+            KeyCode::Char('j') | KeyCode::Down => LogMsg::RebaseListScroll(ScrollAction::Fixed(1)),
             KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
                 LogMsg::RebaseListScroll(ScrollAction::Viewport(50))
             }

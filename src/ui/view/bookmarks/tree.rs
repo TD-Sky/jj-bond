@@ -67,8 +67,12 @@ pub fn view<'a>(
             .active(true)
             .on_key_with(|k| {
                 let msg = match k.code {
-                    KeyCode::Char('k') => BookmarksMsg::ScrollRemotes(ScrollAction::Fixed(-1)),
-                    KeyCode::Char('j') => BookmarksMsg::ScrollRemotes(ScrollAction::Fixed(1)),
+                    KeyCode::Char('k') | KeyCode::Up => {
+                        BookmarksMsg::ScrollRemotes(ScrollAction::Fixed(-1))
+                    }
+                    KeyCode::Char('j') | KeyCode::Down => {
+                        BookmarksMsg::ScrollRemotes(ScrollAction::Fixed(1))
+                    }
                     KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                         BookmarksMsg::ScrollRemotes(ScrollAction::Viewport(50))
                     }
@@ -107,8 +111,18 @@ pub fn view<'a>(
         .decorate(|v| v.highlight_style(Style::default().add_modifier(Modifier::REVERSED)))
         .on_key_with(|k| {
             let msg = match k.code {
-                KeyCode::Char('k') => BookmarksMsg::ScrollTree(ScrollAction::Fixed(-1)),
-                KeyCode::Char('j') => BookmarksMsg::ScrollTree(ScrollAction::Fixed(1)),
+                KeyCode::Char('K') | KeyCode::Up if k.modifiers == KeyModifiers::SHIFT => {
+                    BookmarksMsg::ScrollHistory(ScrollAction::Viewport(-25))
+                }
+                KeyCode::Char('J') | KeyCode::Down if k.modifiers == KeyModifiers::SHIFT => {
+                    BookmarksMsg::ScrollHistory(ScrollAction::Viewport(25))
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    BookmarksMsg::ScrollTree(ScrollAction::Fixed(-1))
+                }
+                KeyCode::Char('j') | KeyCode::Down => {
+                    BookmarksMsg::ScrollTree(ScrollAction::Fixed(1))
+                }
                 KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                     BookmarksMsg::ScrollTree(ScrollAction::Viewport(50))
                 }
@@ -121,14 +135,8 @@ pub fn view<'a>(
                 KeyCode::Char('b') if k.modifiers == KeyModifiers::CONTROL => {
                     BookmarksMsg::ScrollTree(ScrollAction::Viewport(-100))
                 }
-                KeyCode::Char('l') => BookmarksMsg::BookmarkOpen,
-                KeyCode::Char('h') => BookmarksMsg::BookmarkClose,
-                KeyCode::Char('K') if k.modifiers == KeyModifiers::SHIFT => {
-                    BookmarksMsg::ScrollHistory(ScrollAction::Viewport(-25))
-                }
-                KeyCode::Char('J') if k.modifiers == KeyModifiers::SHIFT => {
-                    BookmarksMsg::ScrollHistory(ScrollAction::Viewport(25))
-                }
+                KeyCode::Char('l') | KeyCode::Right => BookmarksMsg::BookmarkOpen,
+                KeyCode::Char('h') | KeyCode::Left => BookmarksMsg::BookmarkClose,
                 KeyCode::Char('t') => BookmarksMsg::Track,
                 KeyCode::Char('u') => BookmarksMsg::Untrack,
                 KeyCode::Char('d') => BookmarksMsg::Delete,

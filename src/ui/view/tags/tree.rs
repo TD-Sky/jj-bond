@@ -83,8 +83,12 @@ pub fn view<'a>(
             .active(true)
             .on_key_with(|k| {
                 let msg = match k.code {
-                    KeyCode::Char('k') => TagsMsg::ScrollRemotes(ScrollAction::Fixed(-1)),
-                    KeyCode::Char('j') => TagsMsg::ScrollRemotes(ScrollAction::Fixed(1)),
+                    KeyCode::Char('k') | KeyCode::Up => {
+                        TagsMsg::ScrollRemotes(ScrollAction::Fixed(-1))
+                    }
+                    KeyCode::Char('j') | KeyCode::Down => {
+                        TagsMsg::ScrollRemotes(ScrollAction::Fixed(1))
+                    }
                     KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                         TagsMsg::ScrollRemotes(ScrollAction::Viewport(50))
                     }
@@ -123,8 +127,14 @@ pub fn view<'a>(
         .decorate(|v| v.highlight_style(Style::new().add_modifier(Modifier::REVERSED)))
         .on_key_with(|k| {
             let msg = match k.code {
-                KeyCode::Char('k') => TagsMsg::ScrollTree(ScrollAction::Fixed(-1)),
-                KeyCode::Char('j') => TagsMsg::ScrollTree(ScrollAction::Fixed(1)),
+                KeyCode::Char('K') | KeyCode::Up if k.modifiers == KeyModifiers::SHIFT => {
+                    TagsMsg::ScrollHistory(ScrollAction::Viewport(-25))
+                }
+                KeyCode::Char('J') | KeyCode::Down if k.modifiers == KeyModifiers::SHIFT => {
+                    TagsMsg::ScrollHistory(ScrollAction::Viewport(25))
+                }
+                KeyCode::Char('k') | KeyCode::Up => TagsMsg::ScrollTree(ScrollAction::Fixed(-1)),
+                KeyCode::Char('j') | KeyCode::Down => TagsMsg::ScrollTree(ScrollAction::Fixed(1)),
                 KeyCode::Char('d') if k.modifiers == KeyModifiers::CONTROL => {
                     TagsMsg::ScrollTree(ScrollAction::Viewport(50))
                 }
@@ -137,14 +147,8 @@ pub fn view<'a>(
                 KeyCode::Char('b') if k.modifiers == KeyModifiers::CONTROL => {
                     TagsMsg::ScrollTree(ScrollAction::Viewport(-100))
                 }
-                KeyCode::Char('l') => TagsMsg::TagOpen,
-                KeyCode::Char('h') => TagsMsg::TagClose,
-                KeyCode::Char('K') if k.modifiers == KeyModifiers::SHIFT => {
-                    TagsMsg::ScrollHistory(ScrollAction::Viewport(-25))
-                }
-                KeyCode::Char('J') if k.modifiers == KeyModifiers::SHIFT => {
-                    TagsMsg::ScrollHistory(ScrollAction::Viewport(25))
-                }
+                KeyCode::Char('l') | KeyCode::Right => TagsMsg::TagOpen,
+                KeyCode::Char('h') | KeyCode::Left => TagsMsg::TagClose,
                 KeyCode::Char('t') => TagsMsg::Track,
                 KeyCode::Char('u') => TagsMsg::Untrack,
                 KeyCode::Char('d') => TagsMsg::Delete,

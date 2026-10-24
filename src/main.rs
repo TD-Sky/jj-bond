@@ -1,4 +1,3 @@
-use clap::Parser;
 use jj_bond::{cli::Cli, ui::run, utils::log::init_log};
 
 fn main() {

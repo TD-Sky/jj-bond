@@ -51,11 +51,11 @@ pub fn view<'a>(VState { view, state, input }: VState<'a>) -> impl Component<Mes
                 .items(view)
                 .decorate(|v| v.highlight_style(Style::default().add_modifier(Modifier::REVERSED)))
                 .on_key(
-                    |k| k.code == KeyCode::Char('k'),
+                    |k| matches!(k.code, KeyCode::Char('k') | KeyCode::Up),
                     LogMsg::TagListScroll(ScrollAction::Fixed(-1)),
                 )
                 .on_key(
-                    |k| k.code == KeyCode::Char('j'),
+                    |k| matches!(k.code, KeyCode::Char('j') | KeyCode::Down),
                     LogMsg::TagListScroll(ScrollAction::Fixed(1)),
                 )
                 .on_key(

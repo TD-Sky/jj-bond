@@ -119,8 +119,14 @@ pub fn view(state: &mut State) -> Box<dyn Component<Message> + '_> {
             |k| k.code == KeyCode::Char('4'),
             NavMsg::TabSelect(Tab::Operations).into(),
         )
-        .on_key(|k| k.code == KeyCode::Char('H'), NavMsg::TabPrev.into())
-        .on_key(|k| k.code == KeyCode::Char('L'), NavMsg::TabNext.into())
+        .on_key(
+            |k| matches!(k.code, KeyCode::Char('H') | KeyCode::Left),
+            NavMsg::TabPrev.into(),
+        )
+        .on_key(
+            |k| matches!(k.code, KeyCode::Char('L') | KeyCode::Right),
+            NavMsg::TabNext.into(),
+        )
         .on_key(|k| k.code == KeyCode::Char('q'), Message::Exit)
         .active(true),
         main_mp,
