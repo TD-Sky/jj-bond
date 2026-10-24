@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.9] - 2026-10-24
+
+### Features
+
+- *(no category)* Support arrow keys
+
+- *(no category)* Sort bookmarks/tags
+
+
+### Refactor
+
+- *(cli)* Use `usage-rs`
+
 ## [0.1.8] - 2026-10-02
 
 ### Bug Fixes

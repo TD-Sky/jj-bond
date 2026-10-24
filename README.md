@@ -1,7 +1,8 @@
 <h1 align="center">JJ-Bond</h1>
 
 <p align="center">
-  <a href="https://crates.io/crates/jj-bond"><img src="https://img.shields.io/crates/v/jj-bond.svg" alt="crates.io"></a>
+  <a href="https://crates.io/crates/jj-bond"><img src="https://img.shields.io/crates/v/jj-bond.svg?style=flat-square" alt="crates.io"></a>
+  <a href="https://crates.io/crates/jj-bond"><img src="https://img.shields.io/crates/d/jj-bond.svg?style=flat-square" alt="Downloads"/></a>
   <a href="https://deepwiki.com/TD-Sky/jj-bond"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
   <a href="https://github.com/td-sky/jj-bond/actions/workflows/check.yml"><img src="https://github.com/td-sky/jj-bond/actions/workflows/check.yml/badge.svg?style=flat-square" alt="Check"></a>
   <a href="https://github.com/td-sky/jj-bond/actions/workflows/test.yml"><img src="https://github.com/td-sky/jj-bond/actions/workflows/test.yml/badge.svg?style=flat-square" alt="Test"></a>
